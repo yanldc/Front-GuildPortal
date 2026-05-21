@@ -1,0 +1,6 @@
+{
+  "name": "tooburnnt Guild Management",
+  "description": "Premium management portal for the tooburnnt Raven 2 RPG clan. Track guild points (GP), participate in co-op loot auctions, RSVP to weekly field boss events, and manage roster permissions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
