@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { Sparkles, Sword, CheckCircle, CalendarDays } from 'lucide-react';
 import { Member, LevelUpRequest, LevelUpHelper, LevelUpEnroll, CLASSES_RAVEN2 } from '../../types';
+import { levelupService } from '../../services/levelup';
 import RequestCard from './RequestCard';
 import HelperCard from './HelperCard';
 import RequestForm from './RequestForm';
@@ -14,18 +15,6 @@ interface LevelUpScreenProps {
   currentUser: Member;
 }
 
-const DEFAULT_REQUESTS: LevelUpRequest[] = [
-  { id: 'req1', title: 'Need Tank and Heal for World Rift Floor 5', time: '21:30 BRT', weekday: 'Wednesday', createdBy: 'm4', createdByName: 'ChronoMage', class: 'Elementalist', slots: [{ joinedById: 'm5', joinedByName: 'HolyShield', characterName: 'HolyShield', isAlt: false }, { joinedById: 'm5', joinedByName: 'HolyShield', characterName: 'AltDivine_Shield', isAlt: true }], createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-  { id: 'req2', title: 'Elite Guild Dungeon T3 Quest Team', time: '19:00 BRT', weekday: 'Every day', createdBy: 'm3', createdByName: 'ShadowVixen', class: 'Assassin', slots: [], createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-  { id: 'req3', title: 'Vanguard Training Boss Run', time: '15:00 BRT', weekday: 'Saturday', createdBy: 'm2', createdByName: 'BloodRage', class: 'Berserker', slots: [{ joinedById: 'm1', joinedByName: 'Yan Lemke', characterName: 'Yan Lemke', isAlt: false }], createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString() }
-];
-
-const DEFAULT_HELPERS: LevelUpHelper[] = [
-  { id: 'help1', memberId: 'm1', memberOriginalName: 'Yan Lemke', characterName: 'Yan Lemke (Main)', class: 'Vanguard', isAlt: false, availability: 'After 20:00 BRT', weekday: 'Every day', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-  { id: 'help2', memberId: 'm2', memberOriginalName: 'BloodRage', characterName: 'BloodBerserkerAlt (Alt)', class: 'Berserker', isAlt: true, availability: 'All day long', weekday: 'Saturday', createdAt: new Date(Date.now() - 1005 * 60 * 60).toISOString() },
-  { id: 'help3', memberId: 'm3', memberOriginalName: 'ShadowVixen', characterName: 'ShadowAlt_Healer (Alt)', class: 'Divine Cleric', isAlt: true, availability: '18:00 - 22:00 BRT', weekday: 'Wednesday', createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString() }
-];
-
 export default function LevelUpScreen({ currentUser }: LevelUpScreenProps) {
   const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const localDayName = daysMap[new Date().getDay()];
@@ -34,51 +23,55 @@ export default function LevelUpScreen({ currentUser }: LevelUpScreenProps) {
   const [showHelperForm, setShowHelperForm] = useState(false);
   const [joiningReqId, setJoiningReqId] = useState<string | null>(null);
 
-  const [requests, setRequests] = useState<LevelUpRequest[]>(() => {
-    try { const saved = localStorage.getItem('raven2_levelup_requests'); if (saved) return JSON.parse(saved); } catch {}
-    localStorage.setItem('raven2_levelup_requests', JSON.stringify(DEFAULT_REQUESTS));
-    return DEFAULT_REQUESTS;
-  });
+  const [requests, setRequests] = useState<LevelUpRequest[]>([]);
+  const [helpers, setHelpers] = useState<LevelUpHelper[]>([]);
 
-  const [helpers, setHelpers] = useState<LevelUpHelper[]>(() => {
-    try { const saved = localStorage.getItem('raven2_levelup_helpers'); if (saved) return JSON.parse(saved); } catch {}
-    localStorage.setItem('raven2_levelup_helpers', JSON.stringify(DEFAULT_HELPERS));
-    return DEFAULT_HELPERS;
-  });
+  const fetchRequests = useCallback(async () => {
+    try { setRequests(await levelupService.listRequests()); } catch (e) { console.error(e); }
+  }, []);
 
-  const saveRequests = (list: LevelUpRequest[]) => { setRequests(list); localStorage.setItem('raven2_levelup_requests', JSON.stringify(list)); };
-  const saveHelpers = (list: LevelUpHelper[]) => { setHelpers(list); localStorage.setItem('raven2_levelup_helpers', JSON.stringify(list)); };
+  const fetchHelpers = useCallback(async () => {
+    try { setHelpers(await levelupService.listHelpers()); } catch (e) { console.error(e); }
+  }, []);
+
+  useEffect(() => { fetchRequests(); fetchHelpers(); }, [fetchRequests, fetchHelpers]);
 
   const getFiltered = <T extends { weekday: string }>(list: T[]) => selectedDayTab === 'all' ? list : list.filter(i => i.weekday === selectedDayTab || i.weekday === 'Every day');
   const currentRequests = getFiltered(requests);
   const currentHelpers = getFiltered(helpers);
 
-  const handleCreateRequest = (data: Omit<LevelUpRequest, 'id' | 'slots' | 'createdAt'>) => {
-    const newReq: LevelUpRequest = { ...data, id: 'req-' + Date.now(), slots: [], createdAt: new Date().toISOString() };
-    saveRequests([...requests, newReq]);
+  const handleCreateRequest = async (data: Omit<LevelUpRequest, 'id' | 'slots' | 'createdAt'>) => {
+    await levelupService.createRequest({ ...data, slots: [] } as any);
+    fetchRequests();
     setSelectedDayTab(data.weekday);
   };
 
-  const handleRegisterHelper = (data: { characterName: string; class: string; isAlt: boolean; availability: string; weekday: string }) => {
-    const newHelper: LevelUpHelper = { id: 'help-' + Date.now(), memberId: currentUser.id, memberOriginalName: currentUser.name, ...data, createdAt: new Date().toISOString() };
-    saveHelpers([...helpers, newHelper]);
+  const handleRegisterHelper = async (data: { characterName: string; class: string; isAlt: boolean; availability: string; weekday: string }) => {
+    await levelupService.createHelper({ ...data, memberId: currentUser.id, memberOriginalName: currentUser.name } as any);
+    fetchHelpers();
     setSelectedDayTab(data.weekday);
   };
 
-  const handleConfirmJoin = (characterName: string, isAlt: boolean) => {
+  const handleConfirmJoin = async (characterName: string, isAlt: boolean) => {
     if (!joiningReqId) return;
-    const updated = requests.map(req => {
-      if (req.id === joiningReqId && req.slots.length < 4) {
-        return { ...req, slots: [...req.slots, { joinedById: currentUser.id, joinedByName: currentUser.name, characterName, isAlt } as LevelUpEnroll] };
-      }
-      return req;
-    });
-    saveRequests(updated);
+    await levelupService.joinSlot(joiningReqId, { characterName, isAlt });
+    fetchRequests();
     setJoiningReqId(null);
   };
 
-  const handleLeaveSlot = (reqId: string, charName: string) => {
-    saveRequests(requests.map(req => req.id === reqId ? { ...req, slots: req.slots.filter(s => s.characterName !== charName) } : req));
+  const handleLeaveSlot = async (reqId: string, _charName: string) => {
+    await levelupService.leaveSlot(reqId);
+    fetchRequests();
+  };
+
+  const handleDeleteRequest = async (id: string) => {
+    await levelupService.deleteRequest(id);
+    fetchRequests();
+  };
+
+  const handleDeleteHelper = async (id: string) => {
+    await levelupService.deleteHelper(id);
+    fetchHelpers();
   };
 
   const targetReq = joiningReqId ? requests.find(r => r.id === joiningReqId) : null;
@@ -136,7 +129,7 @@ export default function LevelUpScreen({ currentUser }: LevelUpScreenProps) {
           <div className="bg-[#0a0c10]/40 border border-dashed border-slate-850 p-10 rounded-2xl text-center"><p className="text-slate-500 font-mono uppercase text-[10.5px]">No requests for this day.</p></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currentRequests.map(req => <RequestCard key={req.id} req={req} currentUser={currentUser} onDelete={(id) => saveRequests(requests.filter(r => r.id !== id))} onOpenJoin={setJoiningReqId} onLeaveSlot={handleLeaveSlot} />)}
+            {currentRequests.map(req => <RequestCard key={req.id} req={req} currentUser={currentUser} onDelete={handleDeleteRequest} onOpenJoin={setJoiningReqId} onLeaveSlot={handleLeaveSlot} />)}
           </div>
         )}
       </div>
@@ -162,7 +155,7 @@ export default function LevelUpScreen({ currentUser }: LevelUpScreenProps) {
             <div className="p-10 text-center border border-dashed border-slate-850 bg-[#06080b]/50 rounded-xl"><p className="text-slate-550 font-mono text-[10px] uppercase">No helpers for this day.</p></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {currentHelpers.map(help => <HelperCard key={help.id} help={help} currentUser={currentUser} onRemove={(id) => saveHelpers(helpers.filter(h => h.id !== id))} />)}
+              {currentHelpers.map(help => <HelperCard key={help.id} help={help} currentUser={currentUser} onRemove={handleDeleteHelper} />)}
             </div>
           )}
         </div>

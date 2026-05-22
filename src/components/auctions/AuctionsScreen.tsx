@@ -9,8 +9,8 @@ import CreateAuctionForm from './CreateAuctionForm';
 interface AuctionsScreenProps {
   currentUser: Member;
   auctions: Auction[];
-  onPlaceBid: (auctionId: string, amount: number) => void;
-  onCreateAuction: (newAuction: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => void;
+  onPlaceBid: (auctionId: string, amount: number) => Promise<void> | void;
+  onCreateAuction: (newAuction: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => Promise<void> | void;
   activeAuctionIdFromDashboard: string | null;
   clearActiveAuctionId: () => void;
 }
@@ -27,7 +27,9 @@ export default function AuctionsScreen({ currentUser, auctions, onPlaceBid, onCr
   const filteredAuctions = auctions.filter((auc) => {
     const matchesSearch = auc.itemName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGrade = selectedGrade === 'all' || auc.itemGrade === selectedGrade;
-    const matchesStatus = selectedStatus === 'all' || auc.status === selectedStatus;
+    const isExpired = new Date(auc.endAt).getTime() <= Date.now();
+    const effectiveStatus = (auc.status === 'active' && isExpired) ? 'finished' : auc.status;
+    const matchesStatus = selectedStatus === 'all' || effectiveStatus === selectedStatus;
     return matchesSearch && matchesGrade && matchesStatus;
   });
 

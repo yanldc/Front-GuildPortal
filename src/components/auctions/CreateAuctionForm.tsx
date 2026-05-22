@@ -1,45 +1,34 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Gavel, UploadCloud } from 'lucide-react';
-import { Auction, ItemGrade, ITEM_PRESETS, CLASSES_RAVEN2 } from '../../types';
+import { Gavel } from 'lucide-react';
+import { Auction, ItemGrade, CLASSES_RAVEN2 } from '../../types';
 
 interface CreateAuctionFormProps {
-  onCreateAuction: (details: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => void;
+  onCreateAuction: (details: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => Promise<void> | void;
   onClose: () => void;
 }
 
 export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAuctionFormProps) {
   const [newItemName, setNewItemName] = useState('');
   const [newItemGrade, setNewItemGrade] = useState<ItemGrade>('heroic');
-  const [newItemMinBid, setNewItemMinBid] = useState('100');
+  const [newItemMinBid, setNewItemMinBid] = useState('1');
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemDuration, setNewItemDuration] = useState('24');
   const [newItemAllowedClasses, setNewItemAllowedClasses] = useState<string[]>(['any']);
-  const [usePresetImage, setUsePresetImage] = useState(true);
-  const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
-  const [customImageUrl, setCustomImageUrl] = useState('');
-  const [mockFileName, setMockFileName] = useState<string | null>(null);
-  const [mockFileBase64, setMockFileBase64] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const isAnyClassMode = newItemAllowedClasses.includes('any') || newItemAllowedClasses.length === 0;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMockFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => { setMockFileBase64(reader.result as string); setCustomImageUrl(reader.result as string); setUsePresetImage(false); };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
-    let finalImageUrl = usePresetImage ? ITEM_PRESETS[selectedPresetIndex].url : (customImageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400');
-    const durationHrs = parseFloat(newItemDuration) || 24;
-    onCreateAuction({ itemName: newItemName, itemGrade: newItemGrade, minBid: parseInt(newItemMinBid, 10) || 100, endAt: new Date(Date.now() + 1000 * 60 * 60 * durationHrs).toISOString(), imageUrl: finalImageUrl, description: newItemDesc || `Fresh drop ${newItemGrade} gear.`, allowedClasses: newItemAllowedClasses });
-    onClose();
+    setSubmitting(true);
+    try {
+      const durationHrs = parseFloat(newItemDuration) || 24;
+      await onCreateAuction({ itemName: newItemName, itemGrade: newItemGrade, minBid: parseInt(newItemMinBid, 10) || 100, endAt: new Date(Date.now() + 1000 * 60 * 60 * durationHrs).toISOString(), imageUrl: imageUrl.trim() || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400', description: newItemDesc || `Fresh drop ${newItemGrade} gear.`, allowedClasses: newItemAllowedClasses });
+      onClose();
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -94,26 +83,13 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
           </div>
 
           <div className="space-y-4">
-            <div className="flex bg-[#08090d] border border-slate-800 p-1 rounded-xl">
-              <button type="button" onClick={() => setUsePresetImage(true)} className={`w-1/2 py-2 text-center text-[10px] font-bold uppercase rounded-lg ${usePresetImage ? 'bg-slate-800 text-slate-100' : 'text-slate-500'}`}>Presets</button>
-              <button type="button" onClick={() => setUsePresetImage(false)} className={`w-1/2 py-2 text-center text-[10px] font-bold uppercase rounded-lg ${!usePresetImage ? 'bg-slate-800 text-slate-100' : 'text-slate-500'}`}>Upload</button>
+            <div>
+              <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Image URL</label>
+              <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Paste image URL here" className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 text-xs focus:outline-none" />
             </div>
-            {usePresetImage ? (
-              <div className="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto p-1 border border-slate-800 rounded-xl bg-[#08090d]">
-                {ITEM_PRESETS.map((preset, index) => (
-                  <button key={index} type="button" onClick={() => setSelectedPresetIndex(index)} className={`relative rounded-lg overflow-hidden h-14 border transition-all ${selectedPresetIndex === index ? 'border-cyan-400 ring-2 ring-cyan-400/20' : 'border-slate-800'}`}>
-                    <img src={preset.url} alt={preset.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="border border-dashed border-slate-800 hover:border-cyan-500/40 rounded-xl bg-[#08090d] p-5 text-center relative">
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                  <UploadCloud className="text-cyan-400/75 mx-auto" size={24} />
-                  <p className="text-xs font-semibold uppercase font-mono text-slate-400 mt-1">{mockFileName || 'Load Screenshot'}</p>
-                </div>
-                <input type="text" value={customImageUrl} onChange={(e) => { setCustomImageUrl(e.target.value); setMockFileName(null); }} placeholder="Or paste image URL" className="w-full h-9 px-3 bg-[#08090d] border border-slate-800 rounded-lg text-slate-200 text-xs focus:outline-none" />
+            {imageUrl.trim() && (
+              <div className="rounded-xl overflow-hidden h-44 bg-slate-950 border border-slate-800">
+                <img src={imageUrl} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             )}
           </div>
@@ -121,7 +97,7 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
 
         <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
           <button type="button" onClick={onClose} className="px-4 h-10 rounded-xl text-xs font-semibold uppercase text-slate-400 bg-[#12151f]/50 cursor-pointer">Cancel</button>
-          <button type="submit" className="px-6 h-10 rounded-xl text-xs font-bold uppercase bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 cursor-pointer">Create Auction</button>
+          <button type="submit" disabled={submitting} className="px-6 h-10 rounded-xl text-xs font-bold uppercase bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? '⟳ Creating...' : 'Create Auction'}</button>
         </div>
       </form>
     </motion.div>

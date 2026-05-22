@@ -1,17 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { PointTransaction } from '../types';
-import { storageService, STORAGE_KEYS } from '../services/storage';
-import { INITIAL_TRANSACTIONS } from '../data/seeds';
+import { transactionsService } from '../services/transactions';
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useState<PointTransaction[]>(
-    () => storageService.get(STORAGE_KEYS.TRANSACTIONS, INITIAL_TRANSACTIONS)
-  );
+  const [transactions, setTransactions] = useState<PointTransaction[]>([]);
 
-  const syncTransactions = (newTransactions: PointTransaction[]) => {
-    setTransactions(newTransactions);
-    storageService.set(STORAGE_KEYS.TRANSACTIONS, newTransactions);
-  };
+  const fetchTransactions = useCallback(async () => {
+    const data = await transactionsService.list();
+    setTransactions(data);
+    return data;
+  }, []);
 
-  return { transactions, syncTransactions };
+  return { transactions, setTransactions, fetchTransactions };
 }

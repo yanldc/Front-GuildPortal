@@ -5,21 +5,25 @@ interface PointsAdjustPanelProps {
   members: Member[];
   selectedMemberId: string;
   onClose: () => void;
-  onUpdatePoints: (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => void;
+  onUpdatePoints: (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => Promise<void> | void;
 }
 
 export default function PointsAdjustPanel({ members, selectedMemberId, onClose, onUpdatePoints }: PointsAdjustPanelProps) {
   const [pointAmount, setPointAmount] = useState('50');
   const [pointType, setPointType] = useState<'add' | 'remove'>('add');
+  const [submitting, setSubmitting] = useState(false);
 
   const targetM = members.find((m) => m.id === selectedMemberId);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(pointAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
-    onUpdatePoints(selectedMemberId, amount, pointType, pointType === 'add' ? 'Ajuste de GP (Adicionado por Admin)' : 'Ajuste de GP (Removido por Admin)');
-    onClose();
+    setSubmitting(true);
+    try {
+      await onUpdatePoints(selectedMemberId, amount, pointType, pointType === 'add' ? 'Ajuste de GP (Adicionado por Admin)' : 'Ajuste de GP (Removido por Admin)');
+      onClose();
+    } finally { setSubmitting(false); }
   };
 
   if (!targetM) return null;
@@ -50,8 +54,8 @@ export default function PointsAdjustPanel({ members, selectedMemberId, onClose, 
           <input type="number" min="1" required value={pointAmount} onChange={(e) => setPointAmount(e.target.value)} className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 font-mono text-sm focus:outline-none" />
         </div>
 
-        <button type="submit" className={`w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${pointType === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-red-500 hover:bg-red-600 text-zinc-950 shadow-[0_0_15px_rgba(239,68,68,0.2)]'}`}>
-          {pointType === 'add' ? 'Apply GP Grant' : 'Apply GP Deduction'}
+        <button type="submit" disabled={submitting} className={`w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${pointType === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-red-500 hover:bg-red-600 text-zinc-950 shadow-[0_0_15px_rgba(239,68,68,0.2)]'}`}>
+          {submitting ? '⟳ Processing...' : pointType === 'add' ? 'Apply GP Grant' : 'Apply GP Deduction'}
         </button>
       </form>
     </div>

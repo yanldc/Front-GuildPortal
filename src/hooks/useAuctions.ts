@@ -1,17 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Auction } from '../types';
-import { storageService, STORAGE_KEYS } from '../services/storage';
-import { INITIAL_AUCTIONS } from '../data/seeds';
+import { auctionsService } from '../services/auctions';
 
 export function useAuctions() {
-  const [auctions, setAuctions] = useState<Auction[]>(
-    () => storageService.get(STORAGE_KEYS.AUCTIONS, INITIAL_AUCTIONS)
-  );
+  const [auctions, setAuctions] = useState<Auction[]>([]);
 
-  const syncAuctions = (newAuctions: Auction[]) => {
-    setAuctions(newAuctions);
-    storageService.set(STORAGE_KEYS.AUCTIONS, newAuctions);
-  };
+  const fetchAuctions = useCallback(async (filters?: { status?: string }) => {
+    const data = await auctionsService.list(filters);
+    setAuctions(data);
+    return data;
+  }, []);
 
-  return { auctions, syncAuctions };
+  return { auctions, setAuctions, fetchAuctions };
 }

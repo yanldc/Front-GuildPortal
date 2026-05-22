@@ -1,5 +1,6 @@
-import React from 'react';
-import { Search, Coins } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Coins, Trash2, AlertTriangle } from 'lucide-react';
 import { Member, UserRole, UserRank, CLASSES_RAVEN2 } from '../../types';
 
 interface MembersTableProps {
@@ -17,8 +18,9 @@ interface MembersTableProps {
   selectedMemberIds: string[];
   setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
   setSelectedMemberId: (id: string | null) => void;
-  setViewingProfileMember: (m: Member | null) => void;
+  setViewingProfileMember: (m: Member | null) => void | Promise<void>;
   onUpdateMemberRole: (memberId: string, role: UserRole, rank: UserRank) => void;
+  onDeleteMember: (memberId: string) => Promise<void> | void;
 }
 
 export default function MembersTable({
@@ -26,8 +28,12 @@ export default function MembersTable({
   guildFilter, setGuildFilter, classFilter, setClassFilter,
   sortField, sortDirection, handleSort,
   selectedMemberIds, setSelectedMemberIds, setSelectedMemberId,
-  setViewingProfileMember, onUpdateMemberRole
+  setViewingProfileMember, onUpdateMemberRole, onDeleteMember
 }: MembersTableProps) {
+
+  const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
+  const [confirmName, setConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const filteredMembers = members.filter((m) => {
     const mGuild = m.guild || 'RuinToo';
@@ -128,9 +134,16 @@ export default function MembersTable({
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-cyan-400">{m.points.toLocaleString()} GP</td>
                     <td className="py-3.5 px-4 text-center">
-                      <button onClick={() => { setSelectedMemberIds([]); setSelectedMemberId(m.id); }} className="px-3 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 font-extrabold text-[10px] uppercase tracking-wider transition-all cursor-pointer inline-flex items-center gap-1">
-                        <Coins size={12} /> Manage GP
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button onClick={() => { setSelectedMemberIds([]); setSelectedMemberId(m.id); }} className="px-3 h-8 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 font-extrabold text-[10px] uppercase tracking-wider transition-all cursor-pointer inline-flex items-center gap-1">
+                          <Coins size={12} /> Manage GP
+                        </button>
+                        {!isSelf && (
+                          <button onClick={() => setDeleteTarget(m)} title="Remove member" className="p-1.5 rounded-lg border border-slate-800 hover:border-red-500/40 text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -139,6 +152,73 @@ export default function MembersTable({
           </table>
         </div>
       </div>
+
+      {/* Double Confirmation Delete Modal */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#0d0f14] border border-red-500/30 rounded-2xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-400">
+                <div className="w-10 h-10 rounded-xl bg-red-950/40 border border-red-500/30 flex items-center justify-center">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider">Permanent Deletion</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="bg-red-950/20 border border-red-500/15 rounded-xl p-4 text-xs text-slate-300 space-y-2">
+                <p>You are about to permanently remove <strong className="text-red-400">{deleteTarget.name}</strong> from the guild roster.</p>
+                <p className="text-slate-400">This will delete all their data including: GP balance, bid history, event RSVPs, level-up requests, and transaction logs.</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
+                  Type <strong className="text-red-400">{deleteTarget.name}</strong> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  placeholder={deleteTarget.name}
+                  className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-red-500/50 rounded-xl text-slate-200 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setDeleteTarget(null); setConfirmName(''); }}
+                  className="flex-1 h-10 bg-slate-900 border border-slate-800 text-slate-400 text-xs font-bold uppercase rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={confirmName !== deleteTarget.name || deleting}
+                  onClick={async () => {
+                    setDeleting(true);
+                    try {
+                      await onDeleteMember(deleteTarget.id);
+                      setDeleteTarget(null);
+                      setConfirmName('');
+                    } finally { setDeleting(false); }
+                  }}
+                  className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase rounded-xl cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  {deleting ? '⟳ Removing...' : 'Delete Permanently'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -5,21 +5,25 @@ interface BulkPointsPanelProps {
   members: Member[];
   selectedMemberIds: string[];
   setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
-  onUpdatePointsBulk: (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => void;
+  onUpdatePointsBulk: (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => Promise<void> | void;
 }
 
 export default function BulkPointsPanel({ members, selectedMemberIds, setSelectedMemberIds, onUpdatePointsBulk }: BulkPointsPanelProps) {
   const [bulkPointAmount, setBulkPointAmount] = useState('55');
   const [bulkPointType, setBulkPointType] = useState<'add' | 'remove'>('add');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedMemberIds.length === 0) return;
     const amount = parseInt(bulkPointAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
-    onUpdatePointsBulk(selectedMemberIds, amount, bulkPointType, bulkPointType === 'add' ? 'Ajuste de GP em Massa (Adicionado por Admin)' : 'Ajuste de GP em Massa (Removido por Admin)');
-    setSelectedMemberIds([]);
-    setBulkPointAmount('50');
+    setSubmitting(true);
+    try {
+      await onUpdatePointsBulk(selectedMemberIds, amount, bulkPointType, bulkPointType === 'add' ? 'Ajuste de GP em Massa (Adicionado por Admin)' : 'Ajuste de GP em Massa (Removido por Admin)');
+      setSelectedMemberIds([]);
+      setBulkPointAmount('50');
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -58,8 +62,8 @@ export default function BulkPointsPanel({ members, selectedMemberIds, setSelecte
           <input type="number" min="1" required value={bulkPointAmount} onChange={(e) => setBulkPointAmount(e.target.value)} className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 font-mono text-sm focus:outline-none" />
         </div>
 
-        <button type="submit" className={`w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${bulkPointType === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-red-500 hover:bg-red-600 text-zinc-950 shadow-[0_0_15px_rgba(239,68,68,0.2)]'}`}>
-          {bulkPointType === 'add' ? `Grant GP to ${selectedMemberIds.length} Members` : `Deduct GP from ${selectedMemberIds.length} Members`}
+        <button type="submit" disabled={submitting} className={`w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${bulkPointType === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-red-500 hover:bg-red-600 text-zinc-950 shadow-[0_0_15px_rgba(239,68,68,0.2)]'}`}>
+          {submitting ? '⟳ Processing...' : bulkPointType === 'add' ? `Grant GP to ${selectedMemberIds.length} Members` : `Deduct GP from ${selectedMemberIds.length} Members`}
         </button>
       </form>
     </div>

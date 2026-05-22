@@ -1,17 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { GuildEvent } from '../types';
-import { storageService, STORAGE_KEYS } from '../services/storage';
-import { INITIAL_EVENTS } from '../data/seeds';
+import { eventsService } from '../services/events';
 
 export function useEvents() {
-  const [events, setEvents] = useState<GuildEvent[]>(
-    () => storageService.get(STORAGE_KEYS.EVENTS, INITIAL_EVENTS)
-  );
+  const [events, setEvents] = useState<GuildEvent[]>([]);
 
-  const syncEvents = (newEvents: GuildEvent[]) => {
-    setEvents(newEvents);
-    storageService.set(STORAGE_KEYS.EVENTS, newEvents);
-  };
+  const fetchEvents = useCallback(async () => {
+    const data = await eventsService.list();
+    setEvents(data);
+    return data;
+  }, []);
 
-  return { events, syncEvents };
+  return { events, setEvents, fetchEvents };
 }

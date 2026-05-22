@@ -36,7 +36,8 @@ export default function Dashboard({
 }: DashboardProps) {
   
   // Get active auctions and upcoming events
-  const activeAuctions = auctions.filter(a => a.status === 'active');
+  const activeAuctions = auctions.filter(a => a.status === 'active' && new Date(a.endAt).getTime() > Date.now());
+  const finishedAuctions = auctions.filter(a => a.status === 'finished' || new Date(a.endAt).getTime() <= Date.now());
   const upcomingEvents = events.filter(e => e.status === 'upcoming');
 
   const totalGP = members.reduce((sum, m) => sum + m.points, 0);
@@ -132,95 +133,100 @@ export default function Dashboard({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Active Auctions Quick Widget (Left 7 Columns) */}
-        <div className="lg:col-span-7 bg-[#0a0c10] border border-slate-800/80 rounded-2xl p-5 flex flex-col text-left">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-            <div className="flex items-center gap-2">
-              <Gavel className="text-cyan-400" size={18} />
-              <h3 className="text-sm font-bold font-sans text-slate-200 uppercase tracking-wider">
-                Featured Auctions
-              </h3>
-            </div>
-            <button 
-              onClick={() => {
-                setSelectedAuctionId(null);
-                setActiveTab('auctions');
-              }}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              View all <ArrowRight size={12} />
-            </button>
-          </div>
-
-          <div className="space-y-3 flex-grow">
-            {activeAuctions.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 text-xs font-mono uppercase bg-slate-900/10 rounded-xl border border-dashed border-slate-800">
-                No active auctions at the moment.
+        <div className="lg:col-span-7 bg-[#0a0c10] border border-slate-800/80 rounded-2xl p-5 flex flex-col text-left space-y-6">
+          {/* Active */}
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <div className="flex items-center gap-2">
+                <Gavel className="text-cyan-400" size={18} />
+                <h3 className="text-sm font-bold font-sans text-slate-200 uppercase tracking-wider">
+                  Active Auctions
+                </h3>
               </div>
-            ) : (
-              activeAuctions.slice(0, 3).map((auc) => (
-                <div 
-                  key={auc.id}
-                  className="bg-[#0f1118]/80 hover:bg-[#131622] rounded-xl p-3 border border-slate-900 hover:border-cyan-500/25 transition-all flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-slate-800/80">
-                      <img 
-                        src={auc.imageUrl} 
-                        alt={auc.itemName} 
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Grade Banner badge */}
-                      <span className={`absolute top-0 left-0 w-2 h-full ${
-                        auc.itemGrade === 'legendary' ? 'bg-cyan-400' : auc.itemGrade === 'heroic' ? 'bg-purple-500' : 'bg-blue-500'
-                      }`} />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-slate-200 truncate">{auc.itemName}</h4>
-                      <div className="flex items-center gap-1.5 mt-1 font-mono text-[10px]">
-                        <span className={`px-1.5 rounded uppercase font-bold text-[8px] ${
-                          auc.itemGrade === 'legendary' 
-                            ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
-                            : auc.itemGrade === 'heroic' 
-                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                        }`}>
-                          {auc.itemGrade}
-                        </span>
-                        <div className="text-slate-500 flex items-center gap-1">
-                          <Clock size={10} /> 
-                          {new Date(auc.endAt).getTime() > Date.now() 
-                            ? `${Math.max(1, Math.ceil((new Date(auc.endAt).getTime() - Date.now()) / (1000 * 60 * 60)))}h left`
-                            : 'Ending'}
+              <button 
+                onClick={() => { setSelectedAuctionId(null); setActiveTab('auctions'); }}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                View all <ArrowRight size={12} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {activeAuctions.length === 0 ? (
+                <div className="py-6 text-center text-slate-500 text-xs font-mono uppercase bg-slate-900/10 rounded-xl border border-dashed border-slate-800">
+                  No active auctions at the moment.
+                </div>
+              ) : (
+                activeAuctions.slice(0, 3).map((auc) => (
+                  <div 
+                    key={auc.id}
+                    className="bg-[#0f1118]/80 hover:bg-[#131622] rounded-xl p-3 border border-slate-900 hover:border-cyan-500/25 transition-all flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-slate-800/80">
+                        <img src={auc.imageUrl} alt={auc.itemName} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                        <span className={`absolute top-0 left-0 w-2 h-full ${auc.itemGrade === 'legendary' ? 'bg-cyan-400' : auc.itemGrade === 'heroic' ? 'bg-purple-500' : 'bg-blue-500'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-200 truncate">{auc.itemName}</h4>
+                        <div className="flex items-center gap-1.5 mt-1 font-mono text-[10px]">
+                          <span className={`px-1.5 rounded uppercase font-bold text-[8px] ${auc.itemGrade === 'legendary' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : auc.itemGrade === 'heroic' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>{auc.itemGrade}</span>
+                          <div className="text-slate-500 flex items-center gap-1">
+                            <Clock size={10} />
+                            {`${Math.max(1, Math.ceil((new Date(auc.endAt).getTime() - Date.now()) / (1000 * 60 * 60)))}h left`}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-[9px] font-mono text-slate-500 uppercase leading-[1]">Current Bid</span>
-                      <div className="text-xs font-bold font-mono text-cyan-400 mt-0.5">{auc.currentBid} GP</div>
-                      <span className="text-[8px] font-mono text-slate-500 block truncate max-w-[80px]">
-                        by {(!auc.currentWinnerName || auc.currentWinnerName === 'None') 
-                          ? 'None' 
-                          : (currentUser.role === 'admin' || auc.currentWinnerId === currentUser.id) 
-                            ? (auc.currentWinnerId === currentUser.id ? `${auc.currentWinnerName} (You)` : auc.currentWinnerName) 
-                            : '*****'}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-[9px] font-mono text-slate-500 uppercase leading-[1]">Current Bid</span>
+                        <div className="text-xs font-bold font-mono text-cyan-400 mt-0.5">{auc.currentBid} GP</div>
+                      </div>
+                      <button onClick={() => handleQuickBid(auc.id)} className="px-3 h-8 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 rounded-lg transition-all cursor-pointer active:scale-95">Bid</button>
                     </div>
-
-                    <button
-                      onClick={() => handleQuickBid(auc.id)}
-                      className="px-3 h-8 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 rounded-lg transition-all cursor-pointer active:scale-95"
-                    >
-                      Bid / View
-                    </button>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
+
+          {/* Finished */}
+          {finishedAuctions.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="text-slate-500" size={16} />
+                  <h3 className="text-sm font-bold font-sans text-slate-400 uppercase tracking-wider">
+                    Recently Finished ({finishedAuctions.length})
+                  </h3>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {finishedAuctions.slice(0, 3).map((auc) => (
+                  <div 
+                    key={auc.id}
+                    className="bg-[#0a0c10]/60 rounded-xl p-3 border border-slate-900/60 flex items-center justify-between gap-4 opacity-70"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-slate-800/60 grayscale">
+                        <img src={auc.imageUrl} alt={auc.itemName} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-semibold text-slate-400 truncate">{auc.itemName}</h4>
+                        <span className="text-[9px] font-mono text-slate-500">Won by {auc.currentWinnerName || 'None'}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-[9px] font-mono text-slate-500 uppercase">Final</span>
+                      <div className="text-xs font-bold font-mono text-slate-400">{auc.currentBid} GP</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Upcoming Events Panel (Right 5 Columns) */}

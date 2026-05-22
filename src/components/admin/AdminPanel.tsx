@@ -16,14 +16,24 @@ interface AdminPanelProps {
   onUpdatePoints: (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => void;
   onUpdatePointsBulk: (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => void;
   onUpdateMemberRole: (memberId: string, role: UserRole, rank: UserRank) => void;
+  onDeleteMember: (memberId: string) => Promise<void> | void;
 }
 
-export default function AdminPanel({ currentUser, members, transactions, onAddMember, onUpdatePoints, onUpdatePointsBulk, onUpdateMemberRole }: AdminPanelProps) {
+export default function AdminPanel({ currentUser, members, transactions, onAddMember, onUpdatePoints, onUpdatePointsBulk, onUpdateMemberRole, onDeleteMember }: AdminPanelProps) {
   const [adminTab, setAdminTab] = useState<'members' | 'invites' | 'logs'>('members');
   const [searchQuery, setSearchQuery] = useState('');
   const [guildFilter, setGuildFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [viewingProfileMember, setViewingProfileMember] = useState<Member | null>(null);
+
+  const handleViewProfile = async (m: Member) => {
+    try {
+      const fresh = await import('../../services/members').then(mod => mod.membersService.get(m.id));
+      setViewingProfileMember(fresh as Member);
+    } catch {
+      setViewingProfileMember(m);
+    }
+  };
   const [sortField, setSortField] = useState<'name' | 'level' | 'points' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -66,8 +76,9 @@ export default function AdminPanel({ currentUser, members, transactions, onAddMe
               sortField={sortField} sortDirection={sortDirection} handleSort={handleSort}
               selectedMemberIds={selectedMemberIds} setSelectedMemberIds={setSelectedMemberIds}
               setSelectedMemberId={setSelectedMemberId}
-              setViewingProfileMember={setViewingProfileMember}
+              setViewingProfileMember={handleViewProfile}
               onUpdateMemberRole={onUpdateMemberRole}
+              onDeleteMember={onDeleteMember}
             />
           </div>
           {selectedMemberId && (
@@ -103,6 +114,16 @@ export default function AdminPanel({ currentUser, members, transactions, onAddMe
                         <div className="text-center"><div className="text-slate-500 text-[9px] uppercase">Level</div><div className="text-slate-200 font-bold text-sm">LV. {viewingProfileMember.level}</div></div>
                         <div className="text-center"><div className="text-slate-500 text-[9px] uppercase">GP</div><div className="text-cyan-400 font-bold text-sm">{viewingProfileMember.points.toLocaleString()} GP</div></div>
                       </div>
+                      <div className="w-full mt-4 pt-4 border-t border-slate-900/60">
+                        <span className="text-[9px] font-mono text-slate-500 uppercase block mb-1.5 font-bold">Guild</span>
+                        <span className="text-xs font-mono text-cyan-400 font-bold">{viewingProfileMember.guild || 'RuinToo'}</span>
+                      </div>
+                      <div className="w-full mt-3 pt-3 border-t border-slate-900/60">
+                        <span className="text-[9px] font-mono text-slate-500 uppercase block mb-1.5 font-bold">Alt Names</span>
+                        {viewingProfileMember.altNames && viewingProfileMember.altNames.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 justify-center">{viewingProfileMember.altNames.map((alt, idx) => (<span key={idx} className="bg-slate-950 border border-slate-900 px-2 py-0.5 rounded text-[10px] font-mono text-slate-300">{alt}</span>))}</div>
+                        ) : <span className="text-[10px] font-mono text-slate-500 italic">No alts</span>}
+                      </div>
                     </div>
                     <div className="bg-[#0e1118] border border-slate-850/80 p-5 rounded-xl">
                       <h5 className="text-[11px] font-mono text-cyan-400 uppercase font-extrabold mb-3">Combat Stats</h5>
@@ -116,19 +137,62 @@ export default function AdminPanel({ currentUser, members, transactions, onAddMe
                           <div key={i} className="flex justify-between items-center bg-[#080a0e] px-2.5 py-1.5 rounded-lg border border-slate-900"><span className="text-slate-500">{item.l}:</span><span className="font-mono text-cyan-400 font-bold text-[11px]">{item.v}</span></div>
                         ))}
                       </div>
-                    </div>
-                    <div className="bg-[#0e1118] border border-slate-850/80 p-5 rounded-xl">
-                      <h5 className="text-[11px] font-mono text-cyan-400 uppercase font-extrabold mb-2">Collections</h5>
+                      <h5 className="text-[11px] font-mono text-cyan-400 uppercase font-extrabold mt-5 mb-2">Collections</h5>
                       <div className="space-y-2 text-xs">
                         {[{ l: 'Items', v: profile?.itemsCollection || '0', c: 'text-cyan-300' }, { l: 'Garments', v: profile?.garmentCollection || '0', c: 'text-pink-400' }, { l: 'Familiar', v: profile?.familiarCollection || '0', c: 'text-[#10b981]' }].map((item, i) => (
                           <div key={i} className="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-900"><span className="text-slate-500">{item.l}:</span><span className={`font-mono font-bold ${item.c}`}>{item.v}</span></div>
                         ))}
                       </div>
-                      <div className="pt-3 border-t border-slate-900/60 mt-3">
-                        <span className="text-[9px] font-mono text-slate-500 uppercase block mb-1.5 font-bold">Alt Names</span>
-                        {viewingProfileMember.altNames && viewingProfileMember.altNames.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">{viewingProfileMember.altNames.map((alt, idx) => (<span key={idx} className="bg-slate-950 border border-slate-900 px-2 py-0.5 rounded text-[10px] font-mono text-slate-300">{alt}</span>))}</div>
-                        ) : <span className="text-[10px] font-mono text-slate-500 italic">No alts</span>}
+                    </div>
+                    <div className="bg-[#0e1118] border border-slate-850/80 p-5 rounded-xl space-y-4">
+                      <h5 className="text-[11px] font-mono text-cyan-400 uppercase font-extrabold">Gear Setup</h5>
+                      <div className="space-y-1.5 text-[10px] font-mono max-h-80 overflow-y-auto pr-1">
+                        {[
+                          { l: 'Main Weapon', v: profile?.mainWeapon },
+                          { l: 'Helmet', v: profile?.helmet },
+                          { l: 'Chest', v: profile?.chest },
+                          { l: 'Gloves', v: profile?.gloves },
+                          { l: 'Pants', v: profile?.pants },
+                          { l: 'Boots', v: profile?.boots },
+                          { l: 'Cape', v: profile?.cape },
+                          { l: 'L.Earring', v: profile?.lEarrings },
+                          { l: 'R.Earring', v: profile?.rEarrings },
+                          { l: 'Necklace', v: profile?.necklace },
+                          { l: 'Belt', v: profile?.belt },
+                          { l: 'L.Bracelet', v: profile?.lBracelet },
+                          { l: 'R.Bracelet', v: profile?.rBracelet },
+                          { l: 'L.Ring', v: profile?.lRing },
+                          { l: 'R.Ring', v: profile?.rRing },
+                          { l: 'Toten', v: profile?.toten },
+                          { l: 'Seal', v: profile?.seal },
+                        ].filter(g => g.v && g.v.preset).map((g, i) => (
+                          <div key={i} className="flex justify-between items-center bg-[#080a0e] px-2 py-1.5 rounded border border-slate-900">
+                            <span className="text-slate-500">{g.l}</span>
+                            <span className="text-slate-200">{g.v!.preset} <span className="text-cyan-400 font-bold">{g.v!.refinement}</span></span>
+                          </div>
+                        ))}
+                        {([
+                          { l: 'Rift Hunter', v: profile?.riftHunterSymbol },
+                          { l: 'Honorable', v: profile?.honorableSymbol },
+                          { l: 'Dimensional', v: profile?.dimensionalWanderersSymbol },
+                        ].filter(s => s.v && s.v.preset).length > 0) && (
+                          <>
+                            <div className="border-t border-slate-900 pt-2 mt-2">
+                              <span className="text-[9px] text-slate-500 uppercase font-bold">Symbols</span>
+                            </div>
+                            {[
+                              { l: 'Rift Hunter', v: profile?.riftHunterSymbol },
+                              { l: 'Honorable', v: profile?.honorableSymbol },
+                              { l: 'Dimensional', v: profile?.dimensionalWanderersSymbol },
+                            ].filter(s => s.v && s.v.preset).map((s, i) => (
+                              <div key={i} className="flex justify-between items-center bg-[#080a0e] px-2 py-1.5 rounded border border-slate-900">
+                                <span className="text-slate-500">{s.l}</span>
+                                <span className="text-slate-200">{s.v!.preset} <span className="text-cyan-400 font-bold">{s.v!.refinement}</span></span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                        {!profile && <span className="text-slate-500 italic">No gear data configured</span>}
                       </div>
                     </div>
                   </div>

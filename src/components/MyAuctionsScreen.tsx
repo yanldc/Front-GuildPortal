@@ -14,7 +14,7 @@ import { Member, Auction } from '../types';
 interface MyAuctionsScreenProps {
   currentUser: Member;
   auctions: Auction[];
-  onPlaceBid: (auctionId: string, amount: number) => void;
+  onPlaceBid: (auctionId: string, amount: number) => Promise<void> | void;
 }
 
 export default function MyAuctionsScreen({ currentUser, auctions, onPlaceBid }: MyAuctionsScreenProps) {

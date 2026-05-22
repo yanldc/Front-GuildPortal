@@ -6,7 +6,7 @@ import GearRow from './profile/GearRow';
 
 interface ProfileScreenProps {
   currentUser: Member;
-  onUpdateProfile: (updatedUser: Member) => void;
+  onUpdateProfile: (updatedUser: Member) => void | Promise<void>;
 }
 
 // Preset Constants
@@ -119,6 +119,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
   // UI status
   const [successMsg, setSuccessMsg] = useState(false);
   const [errorString, setErrorString] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAddAltName = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +144,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
     setAltNames(altNames.filter((_, idx) => idx !== index));
   };
 
-  const handleSaveChanges = (e: React.FormEvent) => {
+  const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorString('Character main Name is required.');
@@ -151,38 +152,12 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
     }
 
     const updatedProfile: RPGProfile = {
-      atk,
-      def,
-      acc,
-      itemsCollection: itemsColl,
-      garmentCollection: garmentColl,
-      familiarCollection: familiarColl,
-      riftFloor,
-      towerFloor,
-      mainQuest,
-      // Gear set
-      mainWeapon,
-      gloves,
-      cape,
-      helmet,
-      chest,
-      pants,
-      boots,
-      // Accessories set
-      lEarrings,
-      rEarrings,
-      necklace,
-      belt,
-      lBracelet,
-      rBracelet,
-      lRing,
-      rRing,
-      toten,
-      seal,
-      // Symbols set
-      riftHunterSymbol,
-      honorableSymbol,
-      dimensionalWanderersSymbol
+      atk, def, acc,
+      itemsCollection: itemsColl, garmentCollection: garmentColl, familiarCollection: familiarColl,
+      riftFloor, towerFloor, mainQuest,
+      mainWeapon, gloves, cape, helmet, chest, pants, boots,
+      lEarrings, rEarrings, necklace, belt, lBracelet, rBracelet, lRing, rRing, toten, seal,
+      riftHunterSymbol, honorableSymbol, dimensionalWanderersSymbol
     };
 
     const updatedUser: Member = {
@@ -190,19 +165,20 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
       name: name.trim(),
       class: selectedClass,
       level: Number(level) || currentUser.level,
-      altNames,
-      guild,
+      altNames, guild,
       rpgProfile: updatedProfile
     };
 
-    onUpdateProfile(updatedUser);
-    setSuccessMsg(true);
-    setErrorString(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    setTimeout(() => {
-      setSuccessMsg(false);
-    }, 4000);
+    setSubmitting(true);
+    try {
+      await onUpdateProfile(updatedUser);
+      setSuccessMsg(true);
+      setErrorString(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => setSuccessMsg(false), 4000);
+    } catch {
+      setErrorString('Failed to save profile. Please try again.');
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -636,9 +612,10 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
           <div className="pt-4 border-t border-slate-900 flex justify-end gap-3">
             <button
               type="submit"
-              className="px-6 h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] flex items-center gap-2 cursor-pointer active:scale-95"
+              disabled={submitting}
+              className="px-6 h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={14} /> Update Character Parameters
+              <Save size={14} /> {submitting ? '⟳ Saving...' : 'Update Character Parameters'}
             </button>
           </div>
 

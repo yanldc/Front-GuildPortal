@@ -1,43 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserPlus, CheckCircle, Link2, Trash2, Copy } from 'lucide-react';
 import { CLASSES_RAVEN2, UserRank, UserRole } from '../../types';
+import { invitesService } from '../../services/invites';
 
 export default function InviteForm() {
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteClass, setInviteClass] = useState(CLASSES_RAVEN2[0]);
-  const [inviteRole, setInviteRole] = useState<UserRole>('member');
-  const [invitePoints, setInvitePoints] = useState('150');
+  const [inviteRank, setInviteRank] = useState<string>('Recruit');
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copiedInviteCode, setCopiedInviteCode] = useState<string | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [pendingInvites, setPendingInvites] = useState<any[]>(() => {
-    try { const saved = localStorage.getItem('raven2_pending_invites'); return saved ? JSON.parse(saved) : []; } catch { return []; }
-  });
+  const fetchInvites = async () => {
+    try {
+      const data = await invitesService.list();
+      setPendingInvites(data);
+    } catch (err) {
+      console.error('Failed to fetch invites', err);
+    }
+  };
+
+  useEffect(() => { fetchInvites(); }, []);
 
   const handleCopyLink = (code: string) => {
     try { navigator.clipboard.writeText(`${window.location.origin}/?invite=${code}`); setCopiedInviteCode(code); setTimeout(() => setCopiedInviteCode(null), 2000); } catch (err) { console.error('Copy failed', err); }
   };
 
-  const handleInviteSubmit = (e: React.FormEvent) => {
+  const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteName.trim()) return;
-    const email = inviteEmail.trim() || `${inviteName.toLowerCase().replace(/\s+/g, '')}@gmail.com`;
-    const initialGP = parseInt(invitePoints, 10) || 150;
-    const uniqueHash = Math.random().toString(36).substring(2, 9).toUpperCase();
-    const pendingInvite = { code: uniqueHash, name: inviteName, email, class: inviteClass, rank: 'Recruit' as UserRank, role: inviteRole, points: initialGP, joinedAt: new Date().toISOString() };
-    const updated = [...pendingInvites, pendingInvite];
-    setPendingInvites(updated);
-    localStorage.setItem('raven2_pending_invites', JSON.stringify(updated));
-    setGeneratedLink(`${window.location.origin}/?invite=${uniqueHash}`);
-    setInviteName(''); setInviteEmail(''); setInvitePoints('150');
+    setLoading(true);
+    try {
+      const email = inviteEmail.trim() || `${inviteName.toLowerCase().replace(/\s+/g, '')}@gmail.com`;
+      const invite = await invitesService.create({ email, name: inviteName.trim(), class: inviteClass, rank: inviteRank });
+      setGeneratedLink(`${window.location.origin}/?invite=${invite.code}`);
+      setInviteName(''); setInviteEmail('');
+      fetchInvites();
+    } catch (err) {
+      console.error('Failed to create invite', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteInvite = (code: string) => {
-    const updated = pendingInvites.filter((inv) => inv.code !== code);
-    setPendingInvites(updated);
-    localStorage.setItem('raven2_pending_invites', JSON.stringify(updated));
+  const handleDeleteInvite = async (code: string) => {
+    try {
+      await invitesService.delete(code);
+      fetchInvites();
+    } catch (err) {
+      console.error('Failed to delete invite', err);
+    }
   };
 
   return (
@@ -66,19 +81,18 @@ export default function InviteForm() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Initial GP Compensation Grant</label>
-            <input type="number" min="0" required value={invitePoints} onChange={(e) => setInvitePoints(e.target.value)} className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 text-xs focus:outline-none font-mono" />
+            <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Rank</label>
+            <select value={inviteRank} onChange={(e) => setInviteRank(e.target.value)} className="w-full h-10 px-2.5 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-350 text-xs focus:outline-none">
+              <option value="Recruit">Recruit</option>
+              <option value="Member">Member</option>
+              <option value="Elite">Elite</option>
+              <option value="Officer">Officer</option>
+              <option value="Leader">Leader</option>
+            </select>
           </div>
         </div>
-        <div className="border-t border-slate-900 pt-3">
-          <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Command Authority</label>
-          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as UserRole)} className="w-full h-10 px-2.5 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-355 text-xs focus:outline-none font-sans">
-            <option value="member">Normal Member</option>
-            <option value="admin">Command Official (Admin)</option>
-          </select>
-        </div>
-        <button type="submit" className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
-          <UserPlus size={16} /> Generate Key & Pre-Register Member
+        <button type="submit" disabled={loading} className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-zinc-950 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
+          <UserPlus size={16} /> {loading ? 'Creating...' : 'Generate Key & Pre-Register Member'}
         </button>
       </form>
 
@@ -86,7 +100,7 @@ export default function InviteForm() {
         {generatedLink && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="bg-cyan-500/5 border border-cyan-500/20 p-4 rounded-xl text-left space-y-2">
             <div className="flex items-center gap-1 text-emerald-405 font-bold uppercase text-[10px] font-mono"><CheckCircle size={12} className="text-emerald-500" /> Member pre-registered successfully!</div>
-            <p className="text-[11px] text-slate-400 leading-snug font-sans">Provide the generated simulated invite link token to the recruit:</p>
+            <p className="text-[11px] text-slate-400 leading-snug font-sans">Provide the generated invite link token to the recruit:</p>
             <div className="flex items-center gap-2 bg-[#08090d] border border-slate-850 p-2.5 rounded-lg">
               <Link2 size={14} className="text-cyan-400/70" />
               <span className="text-xs font-mono text-[#22d3ee] truncate select-all">{generatedLink}</span>
@@ -104,8 +118,7 @@ export default function InviteForm() {
                 <tr className="bg-[#0b0e15] border-b border-slate-800 font-mono text-[9px] text-slate-500 uppercase tracking-widest py-2">
                   <th className="py-2.5 px-3">Character Name</th>
                   <th className="py-2.5 px-3">Target Google Email</th>
-                  <th className="py-2.5 px-3">Start GP</th>
-                  <th className="py-2.5 px-3">Authority / Rank</th>
+                  <th className="py-2.5 px-3">Rank</th>
                   <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -117,10 +130,8 @@ export default function InviteForm() {
                       <div><div>{invite.name}</div><div className="text-[10px] text-slate-500 font-mono">{invite.class}</div></div>
                     </td>
                     <td className="py-2.5 px-3 font-mono text-slate-400">{invite.email}</td>
-                    <td className="py-2.5 px-3 font-mono font-semibold text-cyan-400">{invite.points} GP</td>
                     <td className="py-2.5 px-3 font-mono">
-                      <span className="inline-block text-[9.5px] uppercase font-mono px-1.5 py-0.5 rounded border bg-slate-950 border-slate-800 text-slate-400 mr-1.5">{invite.rank || 'Recruit'}</span>
-                      <span className="text-[9.5px] text-slate-500 uppercase">({invite.role})</span>
+                      <span className="inline-block text-[9.5px] uppercase font-mono px-1.5 py-0.5 rounded border bg-slate-950 border-slate-800 text-slate-400">{invite.rank || 'Recruit'}</span>
                     </td>
                     <td className="py-2.5 px-3 text-right space-x-2">
                       <button type="button" onClick={() => handleCopyLink(invite.code)} className="text-[10px] font-mono px-2.5 py-1 border border-slate-800 hover:border-cyan-500/35 rounded text-cyan-400 hover:bg-cyan-500/5 cursor-pointer min-w-[76px]">{copiedInviteCode === invite.code ? 'Copied! ✅' : 'Copy Link'}</button>

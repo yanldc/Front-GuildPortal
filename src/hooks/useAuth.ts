@@ -1,22 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Member } from '../types';
-import { storageService, STORAGE_KEYS } from '../services/storage';
+import { authService } from '../services/auth';
+import { onAuthExpired } from '../services/api';
 
 export function useAuth() {
-  const [currentUser, setCurrentUser] = useState<Member | null>(
-    () => storageService.get<Member | null>(STORAGE_KEYS.CURRENT_USER, null)
-  );
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(true);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const syncCurrentUser = (user: Member | null) => {
-    setCurrentUser(user);
-    if (user) {
-      storageService.set(STORAGE_KEYS.CURRENT_USER, user);
+  // Try to restore session on mount
+  useEffect(() => {
+    authService.getMe()
+      .then(setCurrentUser)
+      .catch(() => { /* no valid session */ })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Listen for 401 responses (session expired)
+  useEffect(() => {
+    const unsubscribe = onAuthExpired(() => {
+      setCurrentUser(null);
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Auto-refresh token every 50 minutes (token expires in 1h)
+  useEffect(() => {
+    if (currentUser) {
+      refreshTimer.current = setInterval(() => {
+        authService.refresh().catch(() => setCurrentUser(null));
+      }, 50 * 60 * 1000);
     } else {
-      storageService.remove(STORAGE_KEYS.CURRENT_USER);
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
     }
+    return () => { if (refreshTimer.current) clearInterval(refreshTimer.current); };
+  }, [currentUser]);
+
+  const login = async (googleToken: string) => {
+    const user = await authService.login(googleToken);
+    setCurrentUser(user);
+    return user;
   };
 
-  const logout = () => syncCurrentUser(null);
+  const logout = async () => {
+    await authService.logout();
+    setCurrentUser(null);
+  };
 
-  return { currentUser, syncCurrentUser, logout };
+  const refreshUser = async () => {
+    const user = await authService.getMe();
+    setCurrentUser(user);
+    return user;
+  };
+
+  return { currentUser, setCurrentUser, login, logout, refreshUser, loading };
 }

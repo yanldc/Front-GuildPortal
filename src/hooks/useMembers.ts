@@ -1,17 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Member } from '../types';
-import { storageService, STORAGE_KEYS } from '../services/storage';
-import { INITIAL_MEMBERS } from '../data/seeds';
+import { membersService } from '../services/members';
 
 export function useMembers() {
-  const [members, setMembers] = useState<Member[]>(
-    () => storageService.get(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS)
-  );
+  const [members, setMembers] = useState<Member[]>([]);
 
-  const syncMembers = (newMembers: Member[]) => {
-    setMembers(newMembers);
-    storageService.set(STORAGE_KEYS.MEMBERS, newMembers);
-  };
+  const fetchMembers = useCallback(async () => {
+    const data = await membersService.list();
+    setMembers(data);
+    return data;
+  }, []);
 
-  return { members, syncMembers };
+  return { members, setMembers, fetchMembers };
 }

@@ -1,10 +1,17 @@
-import { useState } from 'react';
-import { Member, Auction, PointTransaction, UserRank, UserRole } from './types';
+import { useState, useEffect } from 'react';
+import { Member, Auction, UserRank, UserRole } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useMembers } from './hooks/useMembers';
 import { useAuctions } from './hooks/useAuctions';
 import { useEvents } from './hooks/useEvents';
 import { useTransactions } from './hooks/useTransactions';
+import { useToast } from './hooks/useToast';
+import { useWebSocket } from './hooks/useWebSocket';
+import { auctionsService } from './services/auctions';
+import { eventsService } from './services/events';
+import { transactionsService } from './services/transactions';
+import { membersService } from './services/members';
+import { getClassAvatar } from './utils/classAvatar';
 import LoginScreen from './components/LoginScreen';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -14,174 +21,143 @@ import MyAuctionsScreen from './components/MyAuctionsScreen';
 import AdminPanel from './components/admin/AdminPanel';
 import ProfileScreen from './components/ProfileScreen';
 import LevelUpScreen from './components/levelup/LevelUpScreen';
+import ToastContainer from './components/ToastContainer';
 
 export default function App() {
-  const { currentUser, syncCurrentUser, logout } = useAuth();
-  const { members, syncMembers } = useMembers();
-  const { auctions, syncAuctions } = useAuctions();
-  const { events, syncEvents } = useEvents();
-  const { transactions, syncTransactions } = useTransactions();
+  const { currentUser, login, logout, refreshUser, loading } = useAuth();
+  const { members, fetchMembers } = useMembers();
+  const { auctions, fetchAuctions } = useAuctions();
+  const { events, fetchEvents } = useEvents();
+  const { transactions, fetchTransactions } = useTransactions();
+  const { toasts, addToast, removeToast } = useToast();
+
+  // Real-time updates via WebSocket
+  useWebSocket({
+    'auctions:updated': fetchAuctions,
+    'events:updated': fetchEvents,
+    'members:updated': fetchMembers,
+    'transactions:updated': fetchTransactions,
+  }, !!currentUser);
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [activeAuctionIdFromDashboard, setActiveAuctionIdFromDashboard] = useState<string | null>(null);
 
-  // Login handler
-  const handleLogin = (user: Member) => {
-    const exists = members.find((m) => {
-      if (user.email && m.email) return m.email.toLowerCase() === user.email.toLowerCase();
-      return m.name.toLowerCase() === user.name.toLowerCase();
-    });
-
-    if (exists) {
-      const updatedList = members.map((m) => {
-        const matches = (user.email && m.email)
-          ? m.email.toLowerCase() === user.email.toLowerCase()
-          : m.name.toLowerCase() === user.name.toLowerCase();
-        if (matches) return { ...m, name: user.name, avatar: user.avatar, altNames: user.altNames || m.altNames };
-        return m;
-      });
-      syncMembers(updatedList);
-      syncCurrentUser({ ...user, id: exists.id, points: exists.points, role: exists.role, rank: exists.rank, level: exists.level, altNames: user.altNames || exists.altNames });
-    } else {
-      syncMembers([...members, user]);
-      syncCurrentUser(user);
+  useEffect(() => {
+    if (currentUser) {
+      fetchMembers();
+      fetchAuctions();
+      fetchEvents();
+      fetchTransactions();
     }
+  }, [currentUser, fetchMembers, fetchAuctions, fetchEvents, fetchTransactions]);
+
+  const handleLogin = async (user: Member) => {
+    const email = user.email || user.name;
+    await login(email);
     setActiveTab('dashboard');
   };
 
-  // RSVP handler
-  const handleRsvpChange = (eventId: string, isRsvped: boolean) => {
-    if (!currentUser) return;
-    const updatedEvents = events.map((event) => {
-      if (event.id === eventId) {
-        let updatedRsvps = [...event.rsvps];
-        if (isRsvped) {
-          if (!updatedRsvps.includes(currentUser.id)) updatedRsvps.push(currentUser.id);
-        } else {
-          updatedRsvps = updatedRsvps.filter((id) => id !== currentUser.id);
-        }
-        return { ...event, rsvps: updatedRsvps };
-      }
-      return event;
-    });
-    syncEvents(updatedEvents);
+  const handleRsvpChange = async (eventId: string, _isRsvped?: boolean) => {
+    try {
+      await eventsService.toggleRsvp(eventId);
+      fetchEvents();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update RSVP', 'error');
+    }
   };
 
-  // Bid placement handler
-  const handlePlaceBid = (auctionId: string, amount: number) => {
-    if (!currentUser) return;
-    const targetAuction = auctions.find((a) => a.id === auctionId);
-    if (!targetAuction) return;
+  const handlePlaceBid = async (auctionId: string, amount: number) => {
+    try {
+      await auctionsService.placeBid(auctionId, amount);
+      addToast(`Bid of ${amount} GP placed successfully!`, 'success');
+      fetchAuctions();
+      fetchTransactions();
+      refreshUser();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to place bid', 'error');
+    }
+  };
 
-    // Spam check
-    let lastBidTime: number | null = null;
-    auctions.forEach((a) => {
-      a.bids.forEach((b) => {
-        if (b.memberId === currentUser.id) {
-          const t = new Date(b.timestamp).getTime();
-          if (lastBidTime === null || t > lastBidTime) lastBidTime = t;
-        }
+  const handleCreateAuction = async (details: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => {
+    try {
+      await auctionsService.create(details);
+      addToast('Auction created successfully!', 'success');
+      fetchAuctions();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to create auction', 'error');
+    }
+  };
+
+  const handleUpdatePoints = async (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => {
+    try {
+      await transactionsService.adjust({ memberId, amount, type, reason });
+      addToast(`${amount} GP ${type === 'add' ? 'added' : 'removed'} successfully`, 'success');
+      fetchMembers();
+      fetchTransactions();
+      if (currentUser?.id === memberId) refreshUser();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to adjust points', 'error');
+    }
+  };
+
+  const handleUpdatePointsBulk = async (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => {
+    try {
+      await transactionsService.bulkAdjust({ memberIds, amount, type, reason });
+      addToast(`Bulk ${type}: ${amount} GP applied to ${memberIds.length} members`, 'success');
+      fetchMembers();
+      fetchTransactions();
+      if (currentUser && memberIds.includes(currentUser.id)) refreshUser();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to bulk adjust points', 'error');
+    }
+  };
+
+  const handleUpdateMemberRole = async (memberId: string, role: UserRole, rank: UserRank) => {
+    try {
+      await membersService.updateRole(memberId, { role, rank });
+      addToast('Member role updated', 'success');
+      fetchMembers();
+      if (currentUser?.id === memberId) {
+        const updated = await refreshUser();
+        if (updated.role !== 'admin' && activeTab === 'admin') setActiveTab('dashboard');
+      }
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update role', 'error');
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    try {
+      await membersService.delete(memberId);
+      addToast('Member permanently removed from roster', 'success');
+      fetchMembers();
+      fetchTransactions();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete member', 'error');
+    }
+  };
+
+  const handleUpdateEvents = async () => {
+    fetchEvents();
+  };
+
+  const handleUpdateProfile = async (updatedUser: Member) => {
+    try {
+      await membersService.updateProfile(updatedUser.id, {
+        name: updatedUser.name,
+        avatar: getClassAvatar(updatedUser.class),
+        class: updatedUser.class,
+        guild: updatedUser.guild,
+        level: updatedUser.level,
+        altNames: updatedUser.altNames,
+        rpgProfile: updatedUser.rpgProfile,
       });
-    });
-    if (lastBidTime !== null && (Date.now() - lastBidTime) < 30000) return;
-
-    const previousWinnerId = targetAuction.currentWinnerId;
-    const previousBidAmount = targetAuction.currentBid;
-    const previousWinnerName = targetAuction.currentWinnerName;
-
-    const newBidObj = { id: 'bid-' + Date.now(), auctionId, memberId: currentUser.id, memberName: currentUser.name, amount, timestamp: new Date().toISOString() };
-
-    let updatedMembers = [...members];
-    let listTransactions = [...transactions];
-
-    // Refund previous winner
-    if (previousWinnerId) {
-      updatedMembers = updatedMembers.map((m) => m.id === previousWinnerId ? { ...m, points: m.points + previousBidAmount } : m);
-      listTransactions.push({ id: 'refund-' + Date.now() + '-b', memberId: previousWinnerId, memberName: previousWinnerName || 'Clan Member', amount: previousBidAmount, reason: `Refund for outbid item: ${targetAuction.itemName}`, timestamp: new Date().toISOString(), type: 'add' });
+      addToast('Profile updated successfully!', 'success');
+      refreshUser();
+      fetchMembers();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update profile', 'error');
     }
-
-    // Deduct from current user
-    updatedMembers = updatedMembers.map((m) => {
-      if (m.id === currentUser.id) {
-        const newPoints = Math.max(0, m.points - amount);
-        syncCurrentUser({ ...currentUser, points: newPoints });
-        return { ...m, points: newPoints };
-      }
-      return m;
-    });
-    listTransactions.push({ id: 'deduct-' + Date.now() + '-b', memberId: currentUser.id, memberName: currentUser.name, amount, reason: `Bid placed on auction item: ${targetAuction.itemName}`, timestamp: new Date().toISOString(), type: 'remove' });
-
-    // Update auction
-    const updatedAuctions = auctions.map((auc) => {
-      if (auc.id === auctionId) return { ...auc, currentBid: amount, currentWinnerId: currentUser.id, currentWinnerName: currentUser.name, bids: [...auc.bids, newBidObj] };
-      return auc;
-    });
-
-    syncMembers(updatedMembers);
-    syncTransactions(listTransactions);
-    syncAuctions(updatedAuctions);
-  };
-
-  // Create auction
-  const handleCreateAuction = (newAuctionDetails: Omit<Auction, 'id' | 'createdBy' | 'status' | 'bids' | 'currentWinnerId' | 'currentWinnerName' | 'currentBid'>) => {
-    if (!currentUser) return;
-    const newAuction: Auction = { ...newAuctionDetails, id: 'auc-' + Date.now(), currentBid: newAuctionDetails.minBid, currentWinnerId: null, currentWinnerName: 'None', createdBy: currentUser.name, status: 'active', bids: [] };
-    syncAuctions([...auctions, newAuction]);
-  };
-
-  // Update points (single)
-  const handleUpdatePoints = (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => {
-    const targetM = members.find((m) => m.id === memberId);
-    if (!targetM) return;
-    const finalPoints = type === 'add' ? targetM.points + amount : Math.max(0, targetM.points - amount);
-    const newTx: PointTransaction = { id: 'tx-' + Date.now(), memberId, memberName: targetM.name, amount, reason, timestamp: new Date().toISOString(), type };
-    const updatedMembersList = members.map((m) => m.id === memberId ? { ...m, points: finalPoints } : m);
-    if (currentUser && currentUser.id === memberId) syncCurrentUser({ ...currentUser, points: finalPoints });
-    syncMembers(updatedMembersList);
-    syncTransactions([...transactions, newTx]);
-  };
-
-  // Update points (bulk)
-  const handleUpdatePointsBulk = (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => {
-    let updatedMembersList = [...members];
-    const newTxs: PointTransaction[] = [];
-    const timestamp = new Date().toISOString();
-
-    memberIds.forEach((memberId, idx) => {
-      const targetM = updatedMembersList.find((m) => m.id === memberId);
-      if (!targetM) return;
-      const finalPoints = type === 'add' ? targetM.points + amount : Math.max(0, targetM.points - amount);
-      updatedMembersList = updatedMembersList.map((m) => m.id === memberId ? { ...m, points: finalPoints } : m);
-      newTxs.push({ id: 'tx-' + Date.now() + '-' + idx, memberId, memberName: targetM.name, amount, reason, timestamp, type });
-      if (currentUser && currentUser.id === memberId) syncCurrentUser({ ...currentUser, points: finalPoints });
-    });
-
-    syncMembers(updatedMembersList);
-    syncTransactions([...transactions, ...newTxs]);
-  };
-
-  // Update member role
-  const handleUpdateMemberRole = (memberId: string, role: UserRole, rank: UserRank) => {
-    const updatedList = members.map((m) => m.id === memberId ? { ...m, role, rank } : m);
-    if (currentUser && currentUser.id === memberId) {
-      syncCurrentUser({ ...currentUser, role, rank });
-      if (role !== 'admin' && activeTab === 'admin') setActiveTab('dashboard');
-    }
-    syncMembers(updatedList);
-  };
-
-  // Add member
-  const handleAddMember = (newMember: Member) => {
-    syncMembers([...members, newMember]);
-    if (newMember.points > 0) {
-      syncTransactions([...transactions, { id: 'tx-start-' + Date.now(), memberId: newMember.id, memberName: newMember.name, amount: newMember.points, reason: 'Initial GP Enlistment Reward', timestamp: new Date().toISOString(), type: 'add' }]);
-    }
-  };
-
-  // Update profile
-  const handleUpdateProfile = (updatedUser: Member) => {
-    syncCurrentUser(updatedUser);
-    syncMembers(members.map((m) => m.id === updatedUser.id ? updatedUser : m));
   };
 
   const renderTabContent = () => {
@@ -190,7 +166,7 @@ export default function App() {
       case 'dashboard':
         return <Dashboard currentUser={currentUser} members={members} auctions={auctions} events={events} onRsvpChange={handleRsvpChange} setActiveTab={setActiveTab} setSelectedAuctionId={setActiveAuctionIdFromDashboard} />;
       case 'events':
-        return <EventsScreen currentUser={currentUser} members={members} events={events} onRsvpChange={handleRsvpChange} onUpdateEvents={syncEvents} />;
+        return <EventsScreen currentUser={currentUser} members={members} events={events} onRsvpChange={handleRsvpChange} onUpdateEvents={handleUpdateEvents} />;
       case 'auctions':
         return <AuctionsScreen currentUser={currentUser} auctions={auctions} onPlaceBid={handlePlaceBid} onCreateAuction={handleCreateAuction} activeAuctionIdFromDashboard={activeAuctionIdFromDashboard} clearActiveAuctionId={() => setActiveAuctionIdFromDashboard(null)} />;
       case 'my_auctions':
@@ -199,7 +175,7 @@ export default function App() {
         return <LevelUpScreen currentUser={currentUser} />;
       case 'admin':
         if (currentUser.role !== 'admin') { setActiveTab('dashboard'); return null; }
-        return <AdminPanel currentUser={currentUser} members={members} transactions={transactions} onAddMember={handleAddMember} onUpdatePoints={handleUpdatePoints} onUpdatePointsBulk={handleUpdatePointsBulk} onUpdateMemberRole={handleUpdateMemberRole} />;
+        return <AdminPanel currentUser={currentUser} members={members} transactions={transactions} onAddMember={(_member: Member) => fetchMembers()} onUpdatePoints={handleUpdatePoints} onUpdatePointsBulk={handleUpdatePointsBulk} onUpdateMemberRole={handleUpdateMemberRole} onDeleteMember={handleDeleteMember} />;
       case 'profile':
         return <ProfileScreen currentUser={currentUser} onUpdateProfile={handleUpdateProfile} />;
       default:
@@ -207,8 +183,20 @@ export default function App() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#06080B] text-slate-100">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin" />
+          <p className="text-xs font-mono text-slate-400 uppercase tracking-widest">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen text-slate-100 bg-[#06080B] font-sans antialiased">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {currentUser ? (
         <div className="flex flex-col min-h-screen">
           <Navbar currentUser={currentUser} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={logout} />

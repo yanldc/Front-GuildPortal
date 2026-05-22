@@ -7,7 +7,7 @@ interface BidPanelProps {
   auction: Auction;
   currentUser: Member;
   allAuctions: Auction[];
-  onPlaceBid: (auctionId: string, amount: number) => void;
+  onPlaceBid: (auctionId: string, amount: number) => Promise<void> | void;
   onClose: () => void;
 }
 
@@ -15,8 +15,10 @@ export default function BidPanel({ auction, currentUser, allAuctions, onPlaceBid
   const [bidValue, setBidValue] = useState<string>('');
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidSuccess, setBidSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [imageExpanded, setImageExpanded] = useState(false);
 
-  const handleBidSubmit = (e: React.FormEvent) => {
+  const handleBidSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseInt(bidValue, 10);
     if (isNaN(val)) { setBidError('Please type a valid number.'); return; }
@@ -29,9 +31,13 @@ export default function BidPanel({ auction, currentUser, allAuctions, onPlaceBid
     allAuctions.forEach(a => a.bids.forEach(b => { if (b.memberId === currentUser.id) { const t = new Date(b.timestamp).getTime(); if (lastBidTime === null || t > lastBidTime) lastBidTime = t; } }));
     if (lastBidTime !== null && (Date.now() - lastBidTime) < 30000) { setBidError(`Spam Protection: Wait ${Math.ceil((30000 - (Date.now() - lastBidTime)) / 1000)}s.`); return; }
 
-    onPlaceBid(auction.id, val);
-    setBidError(null); setBidSuccess(`✓ Bid of ${val} GP confirmed!`); setBidValue('');
-    setTimeout(() => setBidSuccess(null), 4000);
+    setSubmitting(true);
+    try {
+      await onPlaceBid(auction.id, val);
+      setBidError(null); setBidSuccess(`✓ Bid of ${val} GP confirmed!`); setBidValue('');
+      setTimeout(() => setBidSuccess(null), 4000);
+    } catch { /* handled by parent toast */ }
+    finally { setSubmitting(false); }
   };
 
   const classBlocked = auction.allowedClasses && auction.allowedClasses.length > 0 && !auction.allowedClasses.includes('any') && !auction.allowedClasses.includes(currentUser.class);
@@ -44,13 +50,30 @@ export default function BidPanel({ auction, currentUser, allAuctions, onPlaceBid
       </div>
 
       {/* Image */}
-      <div className="relative rounded-xl overflow-hidden h-44 bg-slate-950 border border-slate-800">
-        <img src={auction.imageUrl} alt={auction.itemName} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+      <div className="relative rounded-xl overflow-hidden h-64 bg-slate-950 border border-slate-800 cursor-pointer" onClick={() => setImageExpanded(true)}>
+        <img src={auction.imageUrl} alt={auction.itemName} referrerPolicy="no-referrer" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent flex flex-col justify-end p-4">
           <span className={`px-2 py-0.5 text-[8px] uppercase font-black tracking-widest rounded w-fit text-zinc-950 ${auction.itemGrade === 'legendary' ? 'bg-cyan-400' : 'bg-purple-300'}`}>{auction.itemGrade}</span>
           <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wide mt-2">{auction.itemName}</h3>
         </div>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      <AnimatePresence>
+        {imageExpanded && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4" onClick={() => setImageExpanded(false)}>
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              src={auction.imageUrl}
+              alt={auction.itemName}
+              referrerPolicy="no-referrer"
+              className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border border-slate-700"
+            />
+          </div>
+        )}
+      </AnimatePresence>
 
       <p className="text-[11px] text-slate-400 bg-slate-900/40 p-3 rounded-lg border border-slate-800/40">{auction.description}</p>
 
@@ -98,7 +121,7 @@ export default function BidPanel({ auction, currentUser, allAuctions, onPlaceBid
               <div className="flex justify-between items-center mb-1 font-mono text-[9px] text-slate-500 uppercase"><span>Min Bid</span><strong className="text-cyan-400">{auction.currentBid + 1} GP</strong></div>
               <div className="flex gap-2">
                 <input type="number" required min={auction.currentBid + 1} value={bidValue} onChange={(e) => setBidValue(e.target.value)} placeholder={`Min: ${auction.currentBid + 1}`} className="w-full h-10 px-3.5 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 font-mono text-xs focus:outline-none" />
-                <button type="submit" className="h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 font-black text-xs uppercase rounded-xl cursor-pointer shrink-0">Place Bid</button>
+                <button type="submit" disabled={submitting} className="h-10 px-5 bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 font-black text-xs uppercase rounded-xl cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? '⟳ Bidding...' : 'Place Bid'}</button>
               </div>
             </div>
           )}

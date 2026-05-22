@@ -7,7 +7,7 @@ import { convertEstToBrt } from '../../utils/time';
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 interface EventFormProps {
-  onSubmit: (evt: Omit<GuildEvent, 'id' | 'status' | 'rsvps'>) => void;
+  onSubmit: (evt: Omit<GuildEvent, 'id' | 'status' | 'rsvps'>) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -19,17 +19,21 @@ export default function EventForm({ onSubmit, onClose }: EventFormProps) {
   const [newTime, setNewTime] = useState('22:30');
   const [newMinLevel, setNewMinLevel] = useState<number>(60);
   const [newRewardsInput, setNewRewardsInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    const rewardsArray = newRewardsInput.split(',').map(r => r.trim()).filter(r => r.length > 0);
-    onSubmit({
-      title: newTitle.trim(), type: newType, description: newDescription.trim() || 'No description.',
-      weekday: newWeekday, time: newTime, date: newWeekday === 'Every day' ? `Daily at ${newTime}` : `${newWeekday} at ${newTime}`,
-      minLevel: Number(newMinLevel) || 1, rewards: rewardsArray.length ? rewardsArray : ['GP Coins']
-    });
-    onClose();
+    setSubmitting(true);
+    try {
+      const rewardsArray = newRewardsInput.split(',').map(r => r.trim()).filter(r => r.length > 0);
+      await onSubmit({
+        title: newTitle.trim(), type: newType, description: newDescription.trim() || 'No description.',
+        weekday: newWeekday, time: newTime, date: newWeekday === 'Every day' ? `Daily at ${newTime}` : `${newWeekday} at ${newTime}`,
+        minLevel: Number(newMinLevel) || 1, rewards: rewardsArray.length ? rewardsArray : ['GP Coins']
+      });
+      onClose();
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -72,7 +76,7 @@ export default function EventForm({ onSubmit, onClose }: EventFormProps) {
         </div>
         <div className="flex gap-2 justify-end pt-2">
           <button type="button" onClick={onClose} className="px-4 h-9 bg-slate-900 border border-slate-800 text-slate-400 text-xs font-bold rounded-lg cursor-pointer">Cancel</button>
-          <button type="submit" className="px-5 h-9 bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 text-xs font-black uppercase rounded-lg cursor-pointer">Save Event</button>
+          <button type="submit" disabled={submitting} className="px-5 h-9 bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950 text-xs font-black uppercase rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? '⟳ Saving...' : 'Save Event'}</button>
         </div>
       </form>
     </motion.div>

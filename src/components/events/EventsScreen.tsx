@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { Calendar, Search, Clock, Plus, X, RefreshCw } from 'lucide-react';
-import { Member, GuildEvent, GuildEventType, INITIAL_EVENTS } from '../../types';
-import { convertEstToBrt } from '../../utils/time';
+import { Member, GuildEvent, GuildEventType } from '../../types';
+import { eventsService } from '../../services/events';
 import EventCard from './EventCard';
 import EventForm from './EventForm';
 
@@ -13,7 +13,7 @@ interface EventsScreenProps {
   members: Member[];
   events: GuildEvent[];
   onRsvpChange: (eventId: string, isRsvped: boolean) => void;
-  onUpdateEvents?: (updatedEvents: GuildEvent[]) => void;
+  onUpdateEvents?: (updatedEvents?: GuildEvent[]) => void;
 }
 
 export default function EventsScreen({ currentUser, members = [], events, onRsvpChange, onUpdateEvents }: EventsScreenProps) {
@@ -34,11 +34,6 @@ export default function EventsScreen({ currentUser, members = [], events, onRsvp
 
   const isAdmin = currentUser.role === 'admin';
 
-  useEffect(() => {
-    const hasOldEvents = events.some(e => e.id === 'evt1' || e.id === 'evt2' || !e.weekday || e.weekday === 'Todos os dias');
-    if (hasOldEvents && onUpdateEvents) onUpdateEvents(INITIAL_EVENTS);
-  }, [events, onUpdateEvents]);
-
   const filterTypes = [{ id: 'all', label: 'All' }, { id: 'world_boss', label: 'World Boss' }, { id: 'rift', label: 'Rift' }, { id: 'guild_dungeon', label: 'Guild Dungeon' }, { id: 'ancient_fortress', label: 'Ancient Fortress' }, { id: 'clash', label: 'Clash' }, { id: 'abyss_boss', label: 'Abyss Boss' }];
 
   const getFilteredEvents = () => {
@@ -53,15 +48,16 @@ export default function EventsScreen({ currentUser, members = [], events, onRsvp
 
   const currentFilteredList = getFilteredEvents();
 
-  const handleCreateEvent = (data: Omit<GuildEvent, 'id' | 'status' | 'rsvps'>) => {
-    if (!onUpdateEvents) return;
-    const newEvent: GuildEvent = { ...data, id: 'custom-evt-' + Date.now(), status: 'upcoming', rsvps: [] };
-    onUpdateEvents([...events, newEvent]);
+  const handleCreateEvent = async (data: Omit<GuildEvent, 'id' | 'status' | 'rsvps'>) => {
+    await eventsService.create({ ...data, status: 'upcoming', rsvps: [] } as GuildEvent);
+    onUpdateEvents?.();
+    setShowAddForm(false);
   };
 
-  const handleDeleteEvent = (id: string) => {
-    if (!onUpdateEvents) return;
-    if (window.confirm('Delete this event?')) onUpdateEvents(events.filter(e => e.id !== id));
+  const handleDeleteEvent = async (id: string) => {
+    if (!window.confirm('Delete this event?')) return;
+    await eventsService.delete(id);
+    onUpdateEvents?.();
   };
 
   const startEditing = (evt: GuildEvent) => {
@@ -69,16 +65,20 @@ export default function EventsScreen({ currentUser, members = [], events, onRsvp
     setEditWeekday(evt.weekday || 'Every day'); setEditTime(evt.time || '22:30'); setEditRewardsInput(evt.rewards.join(', '));
   };
 
-  const handleSaveEdit = () => {
-    if (!onUpdateEvents || !editingId) return;
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
     const rewardsArray = editRewardsInput.split(',').map(r => r.trim()).filter(r => r.length > 0);
-    onUpdateEvents(events.map(evt => evt.id === editingId ? { ...evt, title: editTitle.trim(), type: editType, description: editDescription.trim(), weekday: editWeekday, time: editTime, date: editWeekday === 'Every day' ? `Daily at ${editTime}` : `${editWeekday} at ${editTime}`, rewards: rewardsArray.length ? rewardsArray : ['GP Coins'] } : evt));
+    await eventsService.update(editingId, {
+      title: editTitle.trim(),
+      type: editType,
+      description: editDescription.trim(),
+      weekday: editWeekday,
+      time: editTime,
+      date: editWeekday === 'Every day' ? `Daily at ${editTime}` : `${editWeekday} at ${editTime}`,
+      rewards: rewardsArray.length ? rewardsArray : ['GP Coins'],
+    });
     setEditingId(null);
-  };
-
-  const handleResetToDefaults = () => {
-    if (!onUpdateEvents) return;
-    if (window.confirm('Reset to default schedule?')) onUpdateEvents(INITIAL_EVENTS);
+    onUpdateEvents?.();
   };
 
   return (
@@ -90,10 +90,9 @@ export default function EventsScreen({ currentUser, members = [], events, onRsvp
           <p className="text-slate-400 text-xs mt-1">Weekly and daily scheduled events. Confirm RSVPs to gain loot priority and GP.</p>
           <div className="mt-1.5 inline-flex items-center gap-1.5 bg-slate-900/60 border border-slate-800/80 px-2.5 py-1 rounded-lg text-[10px] font-mono text-slate-400"><span className="text-cyan-400">ℹ️</span> Times in <strong className="text-slate-300">EST</strong> (converted to <strong className="text-cyan-400">BRT 🇧🇷</strong>).</div>
         </div>
-        {isAdmin && onUpdateEvents && (
+        {isAdmin && (
           <div className="flex items-center gap-2">
             <button onClick={() => setShowAddForm(!showAddForm)} className="px-4 h-9 bg-cyan-500 hover:bg-cyan-600 text-zinc-950 rounded-xl text-xs font-black uppercase flex items-center gap-1.5 cursor-pointer">{showAddForm ? <X size={13} /> : <Plus size={13} />}{showAddForm ? 'Close' : 'New Event'}</button>
-            <button onClick={handleResetToDefaults} title="Reset" className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-cyan-400 cursor-pointer"><RefreshCw size={14} /></button>
           </div>
         )}
       </div>
