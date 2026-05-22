@@ -10,7 +10,7 @@ interface GoogleAccount {
 }
 
 const GOOGLE_ACCOUNTS_PRESET: GoogleAccount[] = [
-  { email: 'yanlemkedecastro@gmail.com', name: 'Yan Lemke de Castro', picture: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Yan', note: 'Primary Developer Account (Rank: Leader)' },
+  { email: 'yanlemkedecastro@gmail.com', name: 'Yokai', picture: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Yan', note: 'Primary Developer Account (Rank: Leader)' },
   { email: 'shadowvixen@guild.com', name: 'Shadow Vixen CSO', picture: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Shadow', note: 'Pre-registered Account (Rank: Elite)' },
   { email: 'bloodrage@guild.com', name: 'Blood Rage Officer', picture: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Blood', note: 'Pre-registered Account (Rank: Officer)' }
 ];
