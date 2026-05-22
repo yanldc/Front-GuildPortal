@@ -72,7 +72,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'filled_black',
         size: 'large',
-        width: '100%',
+        width: 400,
         text: 'signin_with',
         shape: 'pill',
       });
