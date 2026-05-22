@@ -13,20 +13,7 @@ import {
   Volume2
 } from 'lucide-react';
 import { Member, Auction, GuildEvent } from '../types';
-
-const convertEstToBrt = (timeStr: string): string => {
-  if (!timeStr) return '';
-  const cleanStr = timeStr.trim();
-  const match = cleanStr.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return '';
-  const hours = parseInt(match[1], 10);
-  const minutes = match[2];
-  
-  // EST/EDT to BRT is +1 hour difference
-  const brtHours = (hours + 1) % 24;
-  const formattedHours = brtHours.toString().padStart(2, '0');
-  return `${formattedHours}:${minutes} BRT`;
-};
+import { convertEstToBrt } from '../utils/time';
 
 interface DashboardProps {
   currentUser: Member;

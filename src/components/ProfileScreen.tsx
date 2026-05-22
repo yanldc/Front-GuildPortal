@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Sparkles, User, Sword, Plus, HelpCircle, Save, CheckCircle2, RefreshCw, Key, Award, Activity, Grid, Landmark, Layers } from 'lucide-react';
 import { Member, CLASSES_RAVEN2, GearItem, RPGProfile } from '../types';
+import GearRow from './profile/GearRow';
 
 interface ProfileScreenProps {
   currentUser: Member;
@@ -567,12 +568,9 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
               </div>
             </div>
 
-            {/* Armor Rows (one row in front of each other for gloves, cape, helmet, chest, pants, boots) */}
+            {/* Armor Rows */}
             <div className="space-y-2 pt-2">
-              <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">
-                Defense Pieces Setup
-              </label>
-
+              <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">Defense Pieces Setup</label>
               {[
                 { label: 'Gloves', value: gloves, setter: setGloves },
                 { label: 'Cape', value: cape, setter: setCape },
@@ -581,36 +579,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
                 { label: 'Pants', value: pants, setter: setPants },
                 { label: 'Boots', value: boots, setter: setBoots }
               ].map((arm, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 sm:gap-4 items-center p-2 bg-[#0d0f14]/40 hover:bg-[#0d0f14]/90 border border-slate-900 rounded-lg transition-colors">
-                  <div className="col-span-12 sm:col-span-3 text-xs text-slate-300 font-semibold pl-2">
-                    {arm.label}
-                  </div>
-                  
-                  {/* Preset Dropdown */}
-                  <div className="col-span-8 sm:col-span-6">
-                    <select
-                      value={arm.value.preset}
-                      onChange={(e) => arm.setter({ ...arm.value, preset: e.target.value })}
-                      className="w-full h-8 px-2 bg-slate-950 border border-slate-850 rounded text-slate-300 text-[11px] focus:outline-none font-sans"
-                    >
-                      {ARMOR_PRESETS.map((pst) => (
-                        <option key={pst} value={pst}>{pst}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Refinement */}
-                  <div className="col-span-4 sm:col-span-3 flex items-center gap-1">
-                    <span className="text-[8px] font-mono text-slate-500 uppercase">Ref:</span>
-                    <input
-                      type="text"
-                      value={arm.value.refinement}
-                      onChange={(e) => arm.setter({ ...arm.value, refinement: e.target.value })}
-                      placeholder="+6"
-                      className="w-full h-8 px-2 bg-slate-950 border border-slate-850 rounded text-slate-200 text-xs focus:outline-none text-center font-mono font-semibold"
-                    />
-                  </div>
-                </div>
+                <GearRow key={index} label={arm.label} value={arm.value} onChange={arm.setter} presets={ARMOR_PRESETS} />
               ))}
             </div>
           </div>
@@ -623,7 +592,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
               <span className="text-[10px] font-mono text-slate-500 font-normal">Presets with Ref refinement</span>
             </h3>
 
-            {/* Loop for Jewelry pieces: L Earrings, R Earrings, Necklace, Belt, L Bracelet, R Bracelet, L ring, R ring, Toten, Seal */}
+            {/* Loop for Jewelry pieces */}
             <div className="space-y-2">
               {[
                 { label: 'Left Earrings', value: lEarrings, setter: setLEarrings },
@@ -637,36 +606,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
                 { label: 'Toten', value: toten, setter: setToten },
                 { label: 'Seal', value: seal, setter: setSeal }
               ].map((jwl, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 sm:gap-4 items-center p-2 bg-[#0d0f14]/40 hover:bg-[#0d0f14]/90 border border-slate-900 rounded-lg transition-colors">
-                  <div className="col-span-12 sm:col-span-3 text-xs text-slate-300 font-semibold pl-2">
-                    {jwl.label}
-                  </div>
-                  
-                  {/* Jewelry Presets */}
-                  <div className="col-span-8 sm:col-span-6">
-                    <select
-                      value={jwl.value.preset}
-                      onChange={(e) => jwl.setter({ ...jwl.value, preset: e.target.value })}
-                      className="w-full h-8 px-2 bg-slate-950 border border-slate-850 rounded text-slate-300 text-[11px] focus:outline-none font-sans"
-                    >
-                      {JEWELRY_PRESETS.map((pst) => (
-                        <option key={pst} value={pst}>{pst}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Refinement */}
-                  <div className="col-span-4 sm:col-span-3 flex items-center gap-1">
-                    <span className="text-[8px] font-mono text-slate-500 uppercase">Ref:</span>
-                    <input
-                      type="text"
-                      value={jwl.value.refinement}
-                      onChange={(e) => jwl.setter({ ...jwl.value, refinement: e.target.value })}
-                      placeholder="+3"
-                      className="w-full h-8 px-2 bg-slate-950 border border-slate-850 rounded text-slate-200 text-xs focus:outline-none text-center font-mono font-semibold"
-                    />
-                  </div>
-                </div>
+                <GearRow key={index} label={jwl.label} value={jwl.value} onChange={jwl.setter} presets={JEWELRY_PRESETS} refinementPlaceholder="+3" />
               ))}
             </div>
           </div>
@@ -679,43 +619,14 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
               <span className="text-[10px] font-mono text-slate-500 font-normal">Rank Preset & Upgrades</span>
             </h3>
 
-            {/* Symbols setup: Rift Hunter, Honorable, Dimensional Wanderers */}
+            {/* Symbols setup */}
             <div className="space-y-2">
               {[
                 { label: 'Rift Hunter', value: riftHunterSymbol, setter: setRiftHunterSymbol },
                 { label: 'Honorable', value: honorableSymbol, setter: setHonorableSymbol },
                 { label: 'Dimensional Wanderers', value: dimensionalWanderersSymbol, setter: setDimensionalWanderersSymbol }
               ].map((sym, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 sm:gap-4 items-center p-2 bg-[#0d0f14]/40 hover:bg-[#0d0f14]/90 border border-slate-900 rounded-lg transition-colors">
-                  <div className="col-span-12 sm:col-span-3 text-xs text-slate-300 font-semibold pl-2">
-                    {sym.label}
-                  </div>
-                  
-                  {/* Symbol Presets: grey, green, blue, purple, gold */}
-                  <div className="col-span-8 sm:col-span-6">
-                    <select
-                      value={sym.value.preset}
-                      onChange={(e) => sym.setter({ ...sym.value, preset: e.target.value })}
-                      className="w-full h-8 px-3 bg-slate-950 border border-slate-850 rounded text-slate-300 text-xs focus:outline-none font-mono"
-                    >
-                      {SYMBOL_PRESETS.map((pst) => (
-                        <option key={pst} value={pst}>{pst}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Refinement */}
-                  <div className="col-span-4 sm:col-span-3 flex items-center gap-1 border-l border-slate-900 pl-1">
-                    <span className="text-[8px] font-mono text-slate-500 uppercase">LV:</span>
-                    <input
-                      type="text"
-                      value={sym.value.refinement}
-                      onChange={(e) => sym.setter({ ...sym.value, refinement: e.target.value })}
-                      placeholder="Lv.5"
-                      className="w-full h-8 px-2 bg-slate-950 border border-slate-850 rounded text-slate-100 text-xs focus:outline-none text-center font-mono font-semibold"
-                    />
-                  </div>
-                </div>
+                <GearRow key={index} label={sym.label} value={sym.value} onChange={sym.setter} presets={SYMBOL_PRESETS} refinementLabel="LV:" refinementPlaceholder="Lv.5" />
               ))}
             </div>
           </div>
