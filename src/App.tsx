@@ -52,8 +52,10 @@ export default function App() {
   }, [currentUser, fetchMembers, fetchAuctions, fetchEvents, fetchTransactions]);
 
   const handleLogin = async (user: Member) => {
-    const email = user.email || user.name;
-    await login(email);
+    // If it has a real Google token, use it directly
+    const googleToken = (user as any)._googleToken;
+    const token = googleToken || user.email || user.name;
+    await login(token);
     setActiveTab('dashboard');
   };
 

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port=3003 --host=0.0.0.0",
     "build": "vite build",
+    "start": "npx serve dist -s -p $PORT",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
@@ -20,6 +21,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "serve": "^14.2.6",
     "vite": "^6.2.3"
   },
   "devDependencies": {

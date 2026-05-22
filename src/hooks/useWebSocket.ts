@@ -20,8 +20,17 @@ export function useWebSocket(handlers: Handlers, enabled: boolean) {
     let reconnectTimeout: ReturnType<typeof setTimeout>;
 
     function connect() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`);
+      const apiUrl = import.meta.env.VITE_API_URL;
+      let wsUrl: string;
+      if (apiUrl) {
+        // Production: connect to backend domain
+        wsUrl = apiUrl.replace(/^http/, 'ws') + '/ws';
+      } else {
+        // Dev: connect via Vite proxy
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsUrl = `${protocol}//${window.location.host}/api/ws`;
+      }
+      ws = new WebSocket(wsUrl);
 
       ws.onmessage = (event) => {
         try {
