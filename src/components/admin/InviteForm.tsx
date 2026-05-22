@@ -59,7 +59,7 @@ export default function InviteForm() {
     <div className="max-w-2xl mx-auto bg-[#0a0c10] border border-slate-800 rounded-2xl p-6 space-y-6">
       <div className="pb-3 border-b border-slate-800">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2"><UserPlus className="text-cyan-400" size={18} /> Invite New Recruits</h3>
-        <p className="text-slate-400 text-xs mt-1">Pre-register new RPG characters to join tooburnnt and generate valid single-use entry link keys.</p>
+        <p className="text-slate-400 text-xs mt-1">Pre-register new RPG characters to join tooburnt and generate valid single-use entry link keys.</p>
       </div>
 
       <form onSubmit={handleInviteSubmit} className="space-y-4 text-left">

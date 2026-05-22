@@ -48,7 +48,7 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-black font-sans text-slate-100 uppercase tracking-widest leading-none">
-                tooburnnt
+                tooburnt
               </span>
               <span className="text-[9px] font-mono text-cyan-400/80 tracking-wider uppercase mt-1 leading-none">
                 Raven 2 Clan

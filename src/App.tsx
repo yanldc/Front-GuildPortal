@@ -206,8 +206,8 @@ export default function App() {
             {renderTabContent()}
           </main>
           <footer className="py-6 border-t border-slate-900 bg-[#07090F] shrink-0 text-center text-slate-500 font-mono text-[10px] uppercase tracking-wide">
-            <div>Guild Coordination Platform • tooburnnt Raven 2</div>
-            <div className="mt-1 text-[9px] text-slate-600">© 2026 tooburnnt. All rights reserved.</div>
+            <div>Guild Coordination Platform • tooburnt Raven 2</div>
+            <div className="mt-1 text-[9px] text-slate-600">© 2026 tooburnt. All rights reserved.</div>
           </footer>
         </div>
       ) : (
