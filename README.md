@@ -1,15 +1,16 @@
-# ⚔️ Guild Portal — tooburnnt (Raven 2)
+# ⚔️ TooBurnt Union — Frontend (Raven 2)
 
-Plataforma web de coordenação e gerenciamento da guild **tooburnnt** no jogo Raven 2. Permite aos membros acompanhar leilões de loot, eventos da guild, sistema de pontos (GP) e perfil de personagem.
+Plataforma web de coordenação e gerenciamento da guild **tooburnnt** no jogo Raven 2. Interface conectada ao backend via API REST + WebSocket para atualizações em tempo real.
 
-## 🖼️ Visão Geral
+## 🖼️ Funcionalidades
 
-- **Dashboard** — Painel principal com resumo de leilões ativos, eventos e avisos da guild
-- **Leilões** — Sistema de leilão interno com lances em GP para itens dropados em raids/bosses
-- **Eventos** — Calendário de eventos da guild (Rift, Boss, GvG, Raid) com confirmação de presença (RSVP)
-- **Level Up** — Tela de organização para ajuda mútua de level entre membros
-- **Perfil** — Edição de stats, gear e informações do personagem
-- **Admin Panel** — Gerenciamento de membros, pontos e ranks (apenas admins/officers)
+- **Dashboard** — Resumo de leilões ativos/finalizados, eventos e avisos da guild
+- **Leilões** — Sistema de leilão com lances em GP, countdown ao vivo, imagem expandível e atualização real-time via WebSocket
+- **Eventos** — Calendário semanal com RSVP, criação/edição/exclusão (admin)
+- **Level Up** — Organização cooperativa de level entre membros
+- **Perfil** — Edição de stats, gear, acessórios e símbolos do personagem
+- **Admin Panel** — Gerenciamento de membros, GP, ranks, convites e exclusão com dupla confirmação
+- **Notificações** — Sistema de toast global para feedback de todas as operações
 
 ## 🛠️ Tecnologias
 
@@ -17,11 +18,12 @@ Plataforma web de coordenação e gerenciamento da guild **tooburnnt** no jogo R
 |---|---|
 | React 19 | UI |
 | TypeScript | Tipagem |
-| Vite | Build & Dev Server |
+| Vite | Build & Dev Server + Proxy |
 | Tailwind CSS 4 | Estilização |
-| Framer Motion | Animações |
+| Motion (Framer) | Animações |
 | Lucide React | Ícones |
-| LocalStorage | Persistência de dados (client-side) |
+| WebSocket | Atualizações em tempo real |
+| httpOnly Cookies | Autenticação segura (JWT) |
 
 ## 🚀 Como Rodar
 
@@ -29,78 +31,97 @@ Plataforma web de coordenação e gerenciamento da guild **tooburnnt** no jogo R
 # Instalar dependências
 npm install
 
-# Iniciar servidor de desenvolvimento
+# Iniciar servidor de desenvolvimento (requer backend rodando na porta 3333)
 npm run dev
 ```
 
 A aplicação estará disponível em `http://localhost:3003`.
 
+O Vite proxy redireciona automaticamente `/api/*` para o backend e suporta WebSocket.
+
+## 🔐 Autenticação
+
+- Login via Google (em dev, aceita email diretamente)
+- JWT armazenado em httpOnly cookie (não acessível via JavaScript)
+- Auto-refresh do token a cada 50 minutos
+- Detecção automática de sessão expirada (401) com redirect para login
+- Reconexão WebSocket automática a cada 3s se a conexão cair
+
 ## 📁 Estrutura do Projeto
 
 ```
+public/
+└── avatars/                 # Imagens de avatar por classe (PNG)
 src/
 ├── components/              # Componentes de UI organizados por domínio
-│   ├── admin/               # Painel administrativo
-│   │   ├── AdminPanel.tsx       # Orquestrador (tabs + modal)
-│   │   ├── MembersTable.tsx     # Tabela de membros com filtros
-│   │   ├── PointsAdjustPanel.tsx# Ajuste GP individual
-│   │   ├── BulkPointsPanel.tsx  # Ajuste GP em massa
-│   │   ├── InviteForm.tsx       # Formulário de convite
-│   │   └── AuditLogs.tsx        # Logs de transações
-│   ├── auctions/            # Sistema de leilões
-│   │   ├── AuctionsScreen.tsx   # Orquestrador
-│   │   ├── AuctionCard.tsx      # Card de item
-│   │   ├── BidPanel.tsx         # Painel de lance
-│   │   └── CreateAuctionForm.tsx# Formulário de criação
-│   ├── events/              # Eventos da guild
-│   │   ├── EventsScreen.tsx     # Orquestrador
-│   │   ├── EventCard.tsx        # Card de evento
-│   │   └── EventForm.tsx        # Formulário de criação
+│   ├── admin/               # Painel administrativo (roster, GP, invites, logs)
+│   ├── auctions/            # Sistema de leilões (cards, bid panel, criação)
+│   ├── events/              # Eventos da guild (cards, form, filtros)
 │   ├── levelup/             # Sistema de level up cooperativo
-│   │   ├── LevelUpScreen.tsx    # Orquestrador
-│   │   ├── RequestCard.tsx      # Card de pedido de ajuda
-│   │   ├── RequestForm.tsx      # Formulário de request
-│   │   ├── HelperCard.tsx       # Card de helper disponível
-│   │   ├── HelperForm.tsx       # Formulário de registro
-│   │   └── JoinSlotModal.tsx    # Modal de join em party
-│   ├── login/               # Autenticação
-│   │   └── AccountSelector.tsx  # Modal de seleção de conta
-│   ├── profile/             # Perfil do jogador
-│   │   └── GearRow.tsx          # Componente reutilizável de gear
+│   ├── profile/             # Componentes de perfil (gear row)
 │   ├── Dashboard.tsx        # Dashboard principal
-│   ├── LoginScreen.tsx      # Tela de login/registro
-│   ├── MyAuctionsScreen.tsx # Meus lances
+│   ├── LoginScreen.tsx      # Tela de login Google
 │   ├── Navbar.tsx           # Navegação
-│   └── ProfileScreen.tsx    # Perfil e equipamentos
-├── data/                    # Dados iniciais e constantes
-│   ├── constants.ts             # Classes, item presets
-│   └── seeds.ts                 # Dados mock iniciais
-├── hooks/                   # Custom hooks de estado
-│   ├── useAuth.ts               # Login/logout/currentUser
-│   ├── useAuctions.ts           # Estado dos leilões
-│   ├── useEvents.ts             # Estado dos eventos
-│   ├── useMembers.ts            # Estado dos membros
-│   └── useTransactions.ts       # Estado das transações
-├── services/                # Camada de persistência
-│   └── storage.ts               # Abstração do localStorage
-├── types/                   # Interfaces e tipos TypeScript
-│   └── index.ts
-├── utils/                   # Funções utilitárias
-│   └── time.ts                  # Conversão EST → BRT
-├── App.tsx                  # Componente raiz (orquestra hooks)
-├── types.ts                 # Barrel re-export (compatibilidade)
-├── main.tsx                 # Entry point
-└── index.css                # Estilos globais (Tailwind)
+│   ├── ProfileScreen.tsx    # Perfil e equipamentos
+│   └── ToastContainer.tsx   # Notificações globais
+├── data/
+│   └── constants.ts         # Classes do jogo, presets
+├── hooks/
+│   ├── useAuth.ts           # Login/logout/refresh/session
+│   ├── useAuctions.ts      # Fetch de leilões
+│   ├── useEvents.ts        # Fetch de eventos
+│   ├── useMembers.ts       # Fetch de membros
+│   ├── useTransactions.ts  # Fetch de transações
+│   ├── useToast.ts         # Sistema de notificações
+│   └── useWebSocket.ts     # Conexão WebSocket real-time
+├── services/                # Camada HTTP (API client)
+│   ├── api.ts              # Fetch wrapper com credentials e interceptor 401
+│   ├── auth.ts             # Login, logout, refresh, getMe
+│   ├── auctions.ts         # CRUD de leilões + bid
+│   ├── events.ts           # CRUD de eventos + RSVP
+│   ├── invites.ts          # CRUD de convites + verificação pública
+│   ├── levelup.ts          # Requests e helpers
+│   ├── members.ts          # CRUD de membros + perfil
+│   └── transactions.ts     # Ajuste de GP individual e bulk
+├── types/
+│   └── index.ts            # Interfaces TypeScript
+├── utils/
+│   ├── classAvatar.ts      # Mapeamento classe → imagem de avatar
+│   └── time.ts             # Conversão EST → BRT
+├── App.tsx                  # Componente raiz
+├── types.ts                # Barrel re-export
+├── main.tsx                # Entry point
+└── index.css               # Estilos globais (Tailwind)
 ```
 
-## 📜 Scripts Disponíveis
+## 🖼️ Avatares por Classe
+
+Coloque imagens PNG em `public/avatars/` com os nomes:
+
+```
+assassin.png
+night-ranger.png
+berserker.png
+deathbringer.png
+divine-caster.png
+elementalist.png
+destroyer.png
+gunslinger.png
+vanguard.png
+warlord.png
+default.png
+```
+
+O avatar é atualizado automaticamente ao alterar a classe no perfil.
+
+## 📜 Scripts
 
 | Comando | Descrição |
 |---|---|
-| `npm run dev` | Inicia o dev server na porta 3003 |
-| `npm run build` | Gera build de produção |
-| `npm run preview` | Preview do build de produção |
-| `npm run lint` | Verifica tipos com TypeScript |
+| `npm run dev` | Dev server na porta 3003 |
+| `npm run build` | Build de produção |
+| `npm run preview` | Preview do build |
+| `npm run lint` | Verificação de tipos TypeScript |
 
 ## 🎮 Classes Suportadas (Raven 2)
 
