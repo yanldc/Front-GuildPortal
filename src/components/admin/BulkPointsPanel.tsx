@@ -9,7 +9,7 @@ interface BulkPointsPanelProps {
 }
 
 export default function BulkPointsPanel({ members, selectedMemberIds, setSelectedMemberIds, onUpdatePointsBulk }: BulkPointsPanelProps) {
-  const [bulkPointAmount, setBulkPointAmount] = useState('55');
+  const [bulkPointAmount, setBulkPointAmount] = useState('22');
   const [bulkPointType, setBulkPointType] = useState<'add' | 'remove'>('add');
   const [submitting, setSubmitting] = useState(false);
 

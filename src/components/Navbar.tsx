@@ -95,11 +95,11 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
           <div className="hidden md:flex items-center gap-4">
             
             {/* Guild Points Badge */}
-            <div className="flex items-center gap-2 bg-[#121620] border border-cyan-500/20 px-3.5 py-1.5 rounded-xl">
-              <Coins className="text-cyan-400 w-4 h-4 animate-pulse" />
+            <div className="flex items-center gap-2 bg-[#121620] border border-cyan-500/20 px-3.5 py-1.5 rounded-xl min-w-[120px]">
+              <Coins className="text-cyan-400 w-4 h-4 animate-pulse shrink-0" />
               <div className="flex flex-col text-right">
-                <span className="text-[10px] font-mono text-slate-500 uppercase leading-[1]">Your Balance</span>
-                <span className="text-sm font-bold font-mono text-cyan-400 leading-[1.2] mt-0.5">
+                <span className="text-[10px] font-mono text-slate-500 uppercase leading-[1]">Balance</span>
+                <span className="text-sm font-bold font-mono text-cyan-400 leading-[1.2] mt-0.5 whitespace-nowrap">
                   {currentUser.points.toLocaleString()} GP
                 </span>
               </div>

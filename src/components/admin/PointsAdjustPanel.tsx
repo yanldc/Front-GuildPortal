@@ -9,7 +9,7 @@ interface PointsAdjustPanelProps {
 }
 
 export default function PointsAdjustPanel({ members, selectedMemberId, onClose, onUpdatePoints }: PointsAdjustPanelProps) {
-  const [pointAmount, setPointAmount] = useState('50');
+  const [pointAmount, setPointAmount] = useState('22');
   const [pointType, setPointType] = useState<'add' | 'remove'>('add');
   const [submitting, setSubmitting] = useState(false);
 
