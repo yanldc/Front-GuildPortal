@@ -104,7 +104,7 @@ export default function Dashboard({
       {/* Stats Bento Grid Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          { title: 'Total Members', val: `${members.length}/100`, icon: Users, desc: '6 officers active', color: 'border-slate-800' },
+          { title: 'Total Members', val: `${members.length}/100`, icon: Users, desc: `${members.filter(m => m.role === 'admin').length} officers active`, color: 'border-slate-800' },
           { title: 'Active Auctions', val: activeAuctions.length, icon: Gavel, desc: `${activeLances} bids placed`, color: 'border-cyan-500/10' }
         ].map((s, idx) => {
           const Icon = s.icon;
@@ -128,6 +128,32 @@ export default function Dashboard({
           );
         })}
       </div>
+
+      {/* Guild Officers */}
+      {(() => {
+        const admins = members.filter(m => m.role === 'admin');
+        if (admins.length === 0) return null;
+        return (
+          <div className="bg-[#0a0c10] border border-slate-800/80 rounded-2xl p-5 text-left">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-800 mb-4">
+              <Shield className="text-cyan-400" size={16} />
+              <h3 className="text-sm font-bold font-sans text-slate-200 uppercase tracking-wider">Guild Officers</h3>
+              <span className="text-[9px] font-mono text-slate-500 ml-auto">Need help? Reach out to any officer below</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {admins.map((admin) => (
+                <div key={admin.id} className="flex items-center gap-2.5 bg-[#0f1118] border border-slate-800/60 hover:border-cyan-500/20 rounded-xl px-3.5 py-2.5 transition-all">
+                  <img src={admin.avatar} alt={admin.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full bg-[#161a24] border border-slate-750" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-200">{admin.name}</span>
+                    <span className="text-[9px] font-mono text-cyan-400">{admin.rank} • {admin.class}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main split content widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
