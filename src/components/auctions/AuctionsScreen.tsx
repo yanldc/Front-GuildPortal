@@ -53,6 +53,23 @@ export default function AuctionsScreen({ currentUser, auctions, onPlaceBid, onCr
         {showAdminForm && currentUser.role === 'admin' && <CreateAuctionForm onCreateAuction={onCreateAuction} onClose={() => setShowAdminForm(false)} />}
       </AnimatePresence>
 
+      {/* Auction Rules */}
+      <div className="bg-[#0a0c10] border border-slate-800/80 rounded-2xl p-5 text-left">
+        <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-2 mb-3">
+          <Gavel size={14} /> Auction Rules & How It Works
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-[11px] text-slate-400 leading-relaxed">
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">1.</span><span>Bids are placed using your <strong className="text-slate-200">GP (Guild Points)</strong> balance. The amount is deducted immediately upon bidding.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">2.</span><span>Each new bid must be <strong className="text-slate-200">higher than the current bid</strong>. Minimum increment is 1 GP.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">3.</span><span>If you are outbid, your GP is <strong className="text-slate-200">automatically refunded</strong> to your balance.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">4.</span><span><strong className="text-amber-400">Anti-snipe rule:</strong> If a bid is placed in the last 30 seconds, the auction is extended by 30 more seconds.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">5.</span><span>The winner is the <strong className="text-slate-200">last bidder standing</strong> when the timer reaches zero without being outbid for 30 seconds.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">6.</span><span>There is a <strong className="text-slate-200">30-second cooldown</strong> between your own bids to prevent spam.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">7.</span><span>Some items may have <strong className="text-amber-400">class restrictions</strong> — only eligible classes can bid on those.</span></div>
+          <div className="flex items-start gap-2"><span className="text-cyan-500 font-bold shrink-0">8.</span><span>Bidder identities are <strong className="text-slate-200">hidden</strong> during active auctions (only admins and yourself can see your name).</span></div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className={`${selectedAuctionId ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-4`}>
