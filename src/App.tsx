@@ -35,7 +35,7 @@ export default function App() {
   useWebSocket({
     'auctions:updated': fetchAuctions,
     'events:updated': fetchEvents,
-    'members:updated': fetchMembers,
+    'members:updated': () => { fetchMembers(); refreshUser(); },
     'transactions:updated': fetchTransactions,
   }, !!currentUser);
 
