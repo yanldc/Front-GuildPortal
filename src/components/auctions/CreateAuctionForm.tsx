@@ -58,7 +58,7 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
               <div>
                 <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Duration</label>
                 <select value={newItemDuration} onChange={(e) => setNewItemDuration(e.target.value)} className="w-full h-10 px-2.5 bg-[#08090d] border border-slate-800 rounded-xl text-slate-300 text-xs focus:outline-none">
-                  <option value="0.166667">10 Min</option><option value="0.5">30 Min</option><option value="1">1 Hour</option><option value="3">3 Hours</option><option value="6">6 Hours</option><option value="12">12 Hours</option><option value="24">24 Hours</option>
+                  <option value="0.083333">5 Min</option><option value="0.166667">10 Min</option><option value="0.25">15 Min</option><option value="0.5">30 Min</option><option value="1">1 Hour</option><option value="3">3 Hours</option><option value="6">6 Hours</option><option value="12">12 Hours</option><option value="24">24 Hours</option>
                 </select>
               </div>
               <div>
