@@ -157,7 +157,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
       id: '', name: mainCharName, email: authenticatedGoogleUser.email,
       avatar: '', class: selectedClass, level: 60,
       rank: activeInvite.rank || 'Recruit', role: 'member',
-      points: activeInvite.points !== undefined ? activeInvite.points : 150,
+      points: activeInvite.points !== undefined ? activeInvite.points : 0,
       joinedAt: new Date().toISOString(), altNames
     } as Member);
   };
