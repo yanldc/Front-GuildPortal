@@ -36,7 +36,8 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
   const [loginError, setLoginError] = useState<string | null>(null);
   const googleBtnRef = useRef<HTMLDivElement>(null);
 
-  // Invite states
+  // Store the google credential for registration
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
   const [inviteCodeInput, setInviteCodeInput] = useState('');
   const [inviteFeedback, setInviteFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [activeInvite, setActiveInvite] = useState<any | null>(null);
@@ -83,6 +84,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
   const handleGoogleCredentialResponse = (response: { credential: string }) => {
     setIsLoadingAuth(true);
     setLoginError(null);
+    setGoogleCredential(response.credential);
 
     // Send the real Google ID token to the backend
     onLogin({ id: '', name: '', email: '', avatar: '', class: '', level: 0, rank: 'Recruit', role: 'member', points: 0, joinedAt: '', _googleToken: response.credential } as any)
@@ -157,9 +159,11 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
       id: '', name: mainCharName, email: authenticatedGoogleUser.email,
       avatar: '', class: selectedClass, level: 60,
       rank: activeInvite.rank || 'Recruit', role: 'member',
-      points: activeInvite.points !== undefined ? activeInvite.points : 0,
-      joinedAt: new Date().toISOString(), altNames
-    } as Member);
+      points: 0,
+      joinedAt: new Date().toISOString(), altNames,
+      _googleToken: googleCredential,
+      _inviteCode: activeInvite.code,
+    } as any);
   };
 
   const handleDisconnect = () => { setAuthenticatedGoogleUser(null); setFormError(null); };

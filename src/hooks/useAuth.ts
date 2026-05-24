@@ -37,8 +37,8 @@ export function useAuth() {
     return () => { if (refreshTimer.current) clearInterval(refreshTimer.current); };
   }, [currentUser]);
 
-  const login = async (googleToken: string) => {
-    const user = await authService.login(googleToken);
+  const login = async (googleToken: string, inviteCode?: string) => {
+    const user = await authService.login(googleToken, inviteCode);
     setCurrentUser(user);
     return user;
   };

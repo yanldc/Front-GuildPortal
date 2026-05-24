@@ -6,8 +6,8 @@ interface LoginResponse {
 }
 
 export const authService = {
-  async login(googleToken: string): Promise<Member> {
-    const res = await api.post<LoginResponse>('/auth/google', { token: googleToken });
+  async login(googleToken: string, inviteCode?: string): Promise<Member> {
+    const res = await api.post<LoginResponse>('/auth/google', { token: googleToken, inviteCode });
     return res.user;
   },
 

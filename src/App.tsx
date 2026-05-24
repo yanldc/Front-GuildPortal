@@ -54,8 +54,9 @@ export default function App() {
   const handleLogin = async (user: Member) => {
     // If it has a real Google token, use it directly
     const googleToken = (user as any)._googleToken;
+    const inviteCode = (user as any)._inviteCode;
     const token = googleToken || user.email || user.name;
-    await login(token);
+    await login(token, inviteCode);
     setActiveTab('dashboard');
   };
 
