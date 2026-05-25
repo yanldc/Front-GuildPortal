@@ -20,6 +20,7 @@ interface MembersTableProps {
   setSelectedMemberId: (id: string | null) => void;
   setViewingProfileMember: (m: Member | null) => void | Promise<void>;
   onUpdateMemberRole: (memberId: string, role: UserRole, rank: UserRank) => void;
+  onUpdateMemberGuild: (memberId: string, guild: string) => Promise<void> | void;
   onDeleteMember: (memberId: string) => Promise<void> | void;
 }
 
@@ -28,7 +29,7 @@ export default function MembersTable({
   guildFilter, setGuildFilter, classFilter, setClassFilter,
   sortField, sortDirection, handleSort,
   selectedMemberIds, setSelectedMemberIds, setSelectedMemberId,
-  setViewingProfileMember, onUpdateMemberRole, onDeleteMember
+  setViewingProfileMember, onUpdateMemberRole, onUpdateMemberGuild, onDeleteMember
 }: MembersTableProps) {
 
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
@@ -70,6 +71,7 @@ export default function MembersTable({
               <option value="all">All</option>
               <option value="RuinToo">RuinToo</option>
               <option value="Burnout">Burnout</option>
+              <option value="Void">Void</option>
             </select>
           </div>
           <div className="w-full sm:w-52 flex items-center gap-2">
@@ -98,6 +100,7 @@ export default function MembersTable({
                   <div className="flex items-center gap-1.5">Class / Level {sortField === 'level' && <span className="text-[10px] text-cyan-400 font-bold font-mono">{sortDirection === 'asc' ? '▲' : '▼'}</span>}</div>
                 </th>
                 <th className="py-3 px-4">Guild</th>
+                <th className="py-3 px-4">Guild (Edit)</th>
                 <th className="py-3 px-4">Roster</th>
                 <th className="py-3 px-4 text-right cursor-pointer select-none hover:text-cyan-400 transition-colors" onClick={() => handleSort('points')}>
                   <div className="flex items-center justify-end gap-1.5">GP Balance {sortField === 'points' && <span className="text-[10px] text-cyan-400 font-bold font-mono">{sortDirection === 'asc' ? '▲' : '▼'}</span>}</div>
@@ -126,6 +129,13 @@ export default function MembersTable({
                     </td>
                     <td className="py-3.5 px-4"><div className="flex flex-col"><span className="text-slate-300 font-medium">{m.class}</span><span className="text-[10px] font-mono text-slate-500">LEVEL {m.level}</span></div></td>
                     <td className="py-3.5 px-4"><span className="px-2 py-0.5 rounded bg-cyan-950/20 text-cyan-400 border border-cyan-500/10 text-[10px] font-mono font-bold">{m.guild || 'RuinToo'}</span></td>
+                    <td className="py-3.5 px-4 font-sans text-xs">
+                      <select value={m.guild || 'RuinToo'} onChange={(e) => onUpdateMemberGuild(m.id, e.target.value)} className="bg-[#08090d] border border-slate-800 focus:border-cyan-500/45 text-[10px] text-slate-300 font-bold uppercase rounded-lg h-8 px-2 focus:outline-none cursor-pointer">
+                        <option value="RuinToo">RuinToo</option>
+                        <option value="Burnout">Burnout</option>
+                        <option value="Void">Void</option>
+                      </select>
+                    </td>
                     <td className="py-3.5 px-4 font-sans text-xs">
                       <select value={m.role} onChange={(e) => { const newRole = e.target.value as UserRole; const newRank: UserRank = newRole === 'admin' ? 'Officer' : 'Member'; onUpdateMemberRole(m.id, newRole, newRank); }} className="bg-[#08090d] border border-slate-800 focus:border-cyan-500/45 text-[10px] text-slate-300 font-bold uppercase rounded-lg h-8 px-2 focus:outline-none cursor-pointer">
                         <option value="member">Member</option>

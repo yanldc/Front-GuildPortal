@@ -64,7 +64,6 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
   // Base Sign-up fields
   const [name, setName] = useState(currentUser.name);
   const [selectedClass, setSelectedClass] = useState(currentUser.class);
-  const [guild, setGuild] = useState<string>(currentUser.guild || 'RuinToo');
   const [altNames, setAltNames] = useState<string[]>(currentUser.altNames || []);
   const [newAltName, setNewAltName] = useState('');
 
@@ -165,7 +164,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
       name: name.trim(),
       class: selectedClass,
       level: Number(level) || currentUser.level,
-      altNames, guild,
+      altNames,
       rpgProfile: updatedProfile
     };
 
@@ -241,7 +240,7 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
               <Shield size={12} /> Account Registration Parameters
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Character Name */}
               <div>
                 <label className="block text-[10.5px] font-mono text-slate-400 uppercase tracking-wider mb-1">
@@ -271,21 +270,6 @@ export default function ProfileScreen({ currentUser, onUpdateProfile }: ProfileS
                       {cls}
                     </option>
                   ))}
-                </select>
-              </div>
-
-              {/* Guild Choice */}
-              <div>
-                <label className="block text-[10.5px] font-mono text-slate-400 uppercase tracking-wider mb-1">
-                  Guild / Clan Preset
-                </label>
-                <select
-                  value={guild}
-                  onChange={(e) => setGuild(e.target.value)}
-                  className="w-full h-10 px-3 bg-slate-950 border border-slate-850/80 focus:border-cyan-500/50 rounded-xl text-slate-305 text-xs focus:outline-none font-sans"
-                >
-                  <option value="RuinToo">RuinToo</option>
-                  <option value="Burnout">Burnout</option>
                 </select>
               </div>
             </div>

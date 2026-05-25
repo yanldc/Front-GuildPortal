@@ -76,7 +76,7 @@ export default function Dashboard({
             Greetings, <span onClick={() => setActiveTab('profile')} className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 hover:scale-[1.01] inline-block active:scale-95 transition-all cursor-pointer hover:underline underline-offset-4 decoration-cyan-400" title="Click to edit character parameters">{currentUser.name}</span>!
           </h2>
           <p className="text-slate-400 text-sm max-w-xl">
-            Your loyalty to the <span className="text-cyan-400 font-bold uppercase">tooburnt</span> clan strengthens our empire in Raven 2. Attend today's guild events, compete for legendary quality loot, and claim your guild points (GP).
+            Your loyalty to the <span className="text-cyan-400 font-bold uppercase">void/tooburnt</span> clan strengthens our empire in Raven 2. Attend today's guild events, compete for legendary quality loot, and claim your guild points (GP).
           </p>
 
           {currentUser.altNames && currentUser.altNames.length > 0 && (
@@ -146,7 +146,7 @@ export default function Dashboard({
                   <img src={admin.avatar} alt={admin.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full bg-[#161a24] border border-slate-750" />
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-200">{admin.name}</span>
-                    <span className="text-[9px] font-mono text-cyan-400">{admin.rank} • {admin.class}</span>
+                    <span className="text-[9px] font-mono text-cyan-400">{admin.rank} • {admin.class} • {admin.guild || 'RuinToo'}</span>
                   </div>
                 </div>
               ))}

@@ -1,2 +1,2 @@
 export * from './types/index';
-export { CLASSES_RAVEN2, ITEM_PRESETS } from './data/constants';
+export { CLASSES_RAVEN2 } from './data/constants';

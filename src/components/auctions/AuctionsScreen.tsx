@@ -30,7 +30,10 @@ export default function AuctionsScreen({ currentUser, auctions, onPlaceBid, onCr
     const isExpired = new Date(auc.endAt).getTime() <= Date.now();
     const effectiveStatus = (auc.status === 'active' && isExpired) ? 'finished' : auc.status;
     const matchesStatus = selectedStatus === 'all' || effectiveStatus === selectedStatus;
-    return matchesSearch && matchesGrade && matchesStatus;
+    // Guild visibility: admins see all, members only see auctions for their guild or 'any'
+    const allowedGuilds = auc.allowedGuilds || ['any'];
+    const matchesGuild = currentUser.role === 'admin' || allowedGuilds.includes('any') || allowedGuilds.includes(currentUser.guild || 'RuinToo');
+    return matchesSearch && matchesGrade && matchesStatus && matchesGuild;
   });
 
   return (

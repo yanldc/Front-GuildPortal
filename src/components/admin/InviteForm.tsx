@@ -9,6 +9,7 @@ export default function InviteForm() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteClass, setInviteClass] = useState(CLASSES_RAVEN2[0]);
   const [inviteRank, setInviteRank] = useState<string>('Recruit');
+  const [inviteGuild, setInviteGuild] = useState<string>('RuinToo');
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copiedInviteCode, setCopiedInviteCode] = useState<string | null>(null);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
@@ -59,7 +60,7 @@ export default function InviteForm() {
     <div className="max-w-2xl mx-auto bg-[#0a0c10] border border-slate-800 rounded-2xl p-6 space-y-6">
       <div className="pb-3 border-b border-slate-800">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2"><UserPlus className="text-cyan-400" size={18} /> Invite New Recruits</h3>
-        <p className="text-slate-400 text-xs mt-1">Pre-register new RPG characters to join tooburnt and generate valid single-use entry link keys.</p>
+        <p className="text-slate-400 text-xs mt-1">Pre-register new RPG characters to join void/tooburnt and generate valid single-use entry link keys.</p>
       </div>
 
       <form onSubmit={handleInviteSubmit} className="space-y-4 text-left">
@@ -73,7 +74,7 @@ export default function InviteForm() {
             <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="arthas@gmail.com" className="w-full h-10 px-3 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-200 text-xs focus:outline-none" />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Starting Class</label>
             <select value={inviteClass} onChange={(e) => setInviteClass(e.target.value)} className="w-full h-10 px-2.5 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-350 text-xs focus:outline-none">
@@ -88,6 +89,14 @@ export default function InviteForm() {
               <option value="Elite">Elite</option>
               <option value="Officer">Officer</option>
               <option value="Leader">Leader</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Guild</label>
+            <select value={inviteGuild} onChange={(e) => setInviteGuild(e.target.value)} className="w-full h-10 px-2.5 bg-[#08090d] border border-slate-800 focus:border-cyan-500/50 rounded-xl text-slate-350 text-xs focus:outline-none">
+              <option value="RuinToo">RuinToo</option>
+              <option value="Burnout">Burnout</option>
+              <option value="Void">Void</option>
             </select>
           </div>
         </div>

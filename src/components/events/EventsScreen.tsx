@@ -42,7 +42,10 @@ export default function EventsScreen({ currentUser, members = [], events, onRsvp
       const dayMatch = selectedDayTab === 'all' ? true : selectedDayTab === 'Every day' ? evtWeekday === 'Every day' : (evtWeekday === 'Every day' || evtWeekday === selectedDayTab);
       const searchMatch = evt.title.toLowerCase().includes(searchQuery.toLowerCase()) || evt.description.toLowerCase().includes(searchQuery.toLowerCase());
       const typeMatch = selectedType === 'all' || evt.type === selectedType;
-      return dayMatch && searchMatch && typeMatch;
+      // Guild visibility: admins see all, members only see events for their guild or 'any'
+      const allowedGuilds = evt.allowedGuilds || ['any'];
+      const guildMatch = currentUser.role === 'admin' || allowedGuilds.includes('any') || allowedGuilds.includes(currentUser.guild || 'RuinToo');
+      return dayMatch && searchMatch && typeMatch && guildMatch;
     });
   };
 

@@ -81,6 +81,7 @@ export interface Auction {
   imageUrl: string;
   description?: string;
   allowedClasses?: string[];
+  allowedGuilds?: string[];
 }
 
 export type GuildEventType = 'world_boss' | 'rift' | 'guild_dungeon' | 'ancient_fortress' | 'clash' | 'abyss_boss';
@@ -97,6 +98,7 @@ export interface GuildEvent {
   rsvps: string[];
   weekday?: string;
   time?: string;
+  allowedGuilds?: string[];
 }
 
 export interface PointTransaction {

@@ -140,6 +140,16 @@ export default function App() {
     }
   };
 
+  const handleUpdateMemberGuild = async (memberId: string, guild: string) => {
+    try {
+      await membersService.updateProfile(memberId, { guild });
+      addToast(`Guild updated to ${guild}`, 'success');
+      fetchMembers();
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update guild', 'error');
+    }
+  };
+
   const handleUpdateEvents = async () => {
     fetchEvents();
   };
@@ -150,7 +160,6 @@ export default function App() {
         name: updatedUser.name,
         avatar: getClassAvatar(updatedUser.class),
         class: updatedUser.class,
-        guild: updatedUser.guild,
         level: updatedUser.level,
         altNames: updatedUser.altNames,
         rpgProfile: updatedUser.rpgProfile,
@@ -178,7 +187,7 @@ export default function App() {
         return <LevelUpScreen currentUser={currentUser} />;
       case 'admin':
         if (currentUser.role !== 'admin') { setActiveTab('dashboard'); return null; }
-        return <AdminPanel currentUser={currentUser} members={members} transactions={transactions} onAddMember={(_member: Member) => fetchMembers()} onUpdatePoints={handleUpdatePoints} onUpdatePointsBulk={handleUpdatePointsBulk} onUpdateMemberRole={handleUpdateMemberRole} onDeleteMember={handleDeleteMember} />;
+        return <AdminPanel currentUser={currentUser} members={members} transactions={transactions} onAddMember={(_member: Member) => fetchMembers()} onUpdatePoints={handleUpdatePoints} onUpdatePointsBulk={handleUpdatePointsBulk} onUpdateMemberRole={handleUpdateMemberRole} onUpdateMemberGuild={handleUpdateMemberGuild} onDeleteMember={handleDeleteMember} />;
       case 'profile':
         return <ProfileScreen currentUser={currentUser} onUpdateProfile={handleUpdateProfile} />;
       default:
@@ -207,8 +216,8 @@ export default function App() {
             {renderTabContent()}
           </main>
           <footer className="py-6 border-t border-slate-900 bg-[#07090F] shrink-0 text-center text-slate-500 font-mono text-[10px] uppercase tracking-wide">
-            <div>Guild Coordination Platform • tooburnt Raven 2</div>
-            <div className="mt-1 text-[9px] text-slate-600">© 2026 tooburnt. All rights reserved.</div>
+            <div>Guild Coordination Platform • void/tooburnt Raven 2</div>
+            <div className="mt-1 text-[9px] text-slate-600">© 2026 void/tooburnt. All rights reserved.</div>
           </footer>
         </div>
       ) : (

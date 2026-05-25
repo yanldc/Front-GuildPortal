@@ -16,10 +16,11 @@ interface AdminPanelProps {
   onUpdatePoints: (memberId: string, amount: number, type: 'add' | 'remove', reason: string) => void;
   onUpdatePointsBulk: (memberIds: string[], amount: number, type: 'add' | 'remove', reason: string) => void;
   onUpdateMemberRole: (memberId: string, role: UserRole, rank: UserRank) => void;
+  onUpdateMemberGuild: (memberId: string, guild: string) => Promise<void> | void;
   onDeleteMember: (memberId: string) => Promise<void> | void;
 }
 
-export default function AdminPanel({ currentUser, members, transactions, onAddMember, onUpdatePoints, onUpdatePointsBulk, onUpdateMemberRole, onDeleteMember }: AdminPanelProps) {
+export default function AdminPanel({ currentUser, members, transactions, onAddMember, onUpdatePoints, onUpdatePointsBulk, onUpdateMemberRole, onUpdateMemberGuild, onDeleteMember }: AdminPanelProps) {
   const [adminTab, setAdminTab] = useState<'members' | 'invites' | 'logs'>('members');
   const [searchQuery, setSearchQuery] = useState('');
   const [guildFilter, setGuildFilter] = useState<string>('all');
@@ -78,6 +79,7 @@ export default function AdminPanel({ currentUser, members, transactions, onAddMe
               setSelectedMemberId={setSelectedMemberId}
               setViewingProfileMember={handleViewProfile}
               onUpdateMemberRole={onUpdateMemberRole}
+              onUpdateMemberGuild={onUpdateMemberGuild}
               onDeleteMember={onDeleteMember}
             />
           </div>

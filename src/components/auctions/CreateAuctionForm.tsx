@@ -15,6 +15,7 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemDuration, setNewItemDuration] = useState('24');
   const [newItemAllowedClasses, setNewItemAllowedClasses] = useState<string[]>(['any']);
+  const [newItemAllowedGuilds, setNewItemAllowedGuilds] = useState<string[]>(['any']);
   const [imageUrl, setImageUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,7 +27,7 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
     setSubmitting(true);
     try {
       const durationHrs = parseFloat(newItemDuration) || 24;
-      await onCreateAuction({ itemName: newItemName, itemGrade: newItemGrade, minBid: parseInt(newItemMinBid, 10) || 100, endAt: new Date(Date.now() + 1000 * 60 * 60 * durationHrs).toISOString(), imageUrl: imageUrl.trim() || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400', description: newItemDesc || `Fresh drop ${newItemGrade} gear.`, allowedClasses: newItemAllowedClasses });
+      await onCreateAuction({ itemName: newItemName, itemGrade: newItemGrade, minBid: parseInt(newItemMinBid, 10) || 100, endAt: new Date(Date.now() + 1000 * 60 * 60 * durationHrs).toISOString(), imageUrl: imageUrl.trim() || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400', description: newItemDesc || `Fresh drop ${newItemGrade} gear.`, allowedClasses: newItemAllowedClasses, allowedGuilds: newItemAllowedGuilds });
       onClose();
     } finally { setSubmitting(false); }
   };
@@ -79,6 +80,30 @@ export default function CreateAuctionForm({ onCreateAuction, onClose }: CreateAu
             <div>
               <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Description</label>
               <textarea value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)} placeholder="Drop notes..." rows={2} className="w-full p-3 bg-[#08090d] border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none resize-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-slate-400 uppercase mb-1">Guild Restriction</label>
+              <div className="flex gap-2">
+                {['any', 'RuinToo', 'Burnout', 'Void'].map((g) => {
+                  const isSelected = g === 'any' ? newItemAllowedGuilds.includes('any') : newItemAllowedGuilds.includes(g);
+                  return (
+                    <button key={g} type="button" onClick={() => {
+                      if (g === 'any') { setNewItemAllowedGuilds(['any']); }
+                      else {
+                        const without = newItemAllowedGuilds.filter(x => x !== 'any');
+                        if (isSelected) {
+                          const updated = without.filter(x => x !== g);
+                          setNewItemAllowedGuilds(updated.length === 0 ? ['any'] : updated);
+                        } else {
+                          setNewItemAllowedGuilds([...without, g]);
+                        }
+                      }
+                    }} className={`px-3 py-2 text-[10px] font-bold uppercase rounded-lg border transition-all cursor-pointer ${isSelected ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-slate-950/60 text-slate-400 border-slate-850 hover:bg-slate-900'}`}>
+                      {g === 'any' ? '🌐 All Guilds' : g} {isSelected && '✓'}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

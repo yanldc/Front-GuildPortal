@@ -184,7 +184,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
             <Shield className="text-cyan-400 w-7 h-7 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
           </div>
           <h1 className="text-xl sm:text-2xl font-black font-sans tracking-wider text-slate-100 uppercase">GUILD PORTAL</h1>
-          <p className="text-cyan-400/80 font-mono text-xs uppercase tracking-[0.25em] font-medium mt-1">Raven 2 • tooburnt</p>
+          <p className="text-cyan-400/80 font-mono text-xs uppercase tracking-[0.25em] font-medium mt-1">Raven 2 • void/tooburnt</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -197,7 +197,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
             /* LOGIN PHASE */
             <motion.div key="login" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
               <div className="bg-[#0e1118] border border-cyan-500/10 p-4.5 rounded-xl text-slate-300 text-xs leading-relaxed space-y-2">
-                <p>🛡️ <strong className="text-slate-100">Official Access Rule:</strong> This portal is private to members of the <strong className="text-cyan-400">tooburnt</strong> clan.</p>
+                <p>🛡️ <strong className="text-slate-100">Official Access Rule:</strong> This portal is private to members of the <strong className="text-cyan-400">void/tooburnt</strong> clan.</p>
                 <p className="text-slate-400 text-[11px] font-mono">Authenticate through Google to access your character.</p>
               </div>
 
@@ -246,7 +246,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
 
               <div className="bg-[#10141d] border border-cyan-500/30 rounded-xl p-3.5 text-xs text-slate-300 leading-relaxed space-y-1.5">
                 <span className="inline-flex items-center gap-1.5 bg-cyan-950/80 text-cyan-300 border border-cyan-800/20 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-bold">Invite Token Authorized</span>
-                <p>👋 <strong className="text-cyan-400">Invite Validated:</strong> You have been invited as <strong className="text-slate-100">{activeInvite.name}</strong> to join <strong className="text-cyan-300">tooburnt</strong>!</p>
+                <p>👋 <strong className="text-cyan-400">Invite Validated:</strong> You have been invited as <strong className="text-slate-100">{activeInvite.name}</strong> to join <strong className="text-cyan-300">void/tooburnt</strong>!</p>
                 <p className="text-slate-400 text-[11px] font-mono">Rank: <strong className="text-cyan-400">{activeInvite.rank || 'Recruit'}</strong></p>
               </div>
 
@@ -315,7 +315,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
 
               <div className="bg-red-950/15 border border-red-500/20 rounded-xl p-4 text-xs text-slate-350 leading-relaxed space-y-2">
                 <div className="flex items-center gap-1.5 text-red-405 font-mono font-bold uppercase text-[10px]"><AlertCircle size={14} className="text-red-400" /> Enrollment Restricted</div>
-                <p>This Google account (<span className="text-cyan-400 font-mono">{authenticatedGoogleUser.email}</span>) is not registered on the <strong className="text-cyan-300">tooburnt</strong> roster.</p>
+                <p>This Google account (<span className="text-cyan-400 font-mono">{authenticatedGoogleUser.email}</span>) is not registered on the <strong className="text-cyan-300">void/tooburnt</strong> roster.</p>
                 <p className="text-slate-400 text-[11.5px]">You need a valid invite code from a Guild Officer.</p>
               </div>
 
@@ -343,7 +343,7 @@ export default function LoginScreen({ onLogin, members }: LoginScreenProps) {
 
         <div className="mt-8 text-center border-t border-slate-900 pt-4">
           <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest flex items-center justify-center gap-1">
-            <Sparkles size={11} className="text-cyan-400/50 animate-pulse" /> Official tooburnt Server S-1
+            <Sparkles size={11} className="text-cyan-400/50 animate-pulse" /> Official void/tooburnt Server S-1
           </p>
         </div>
       </motion.div>

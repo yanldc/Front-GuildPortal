@@ -19,6 +19,7 @@ export default function EventForm({ onSubmit, onClose }: EventFormProps) {
   const [newTime, setNewTime] = useState('22:30');
   const [newMinLevel, setNewMinLevel] = useState<number>(60);
   const [newRewardsInput, setNewRewardsInput] = useState('');
+  const [newAllowedGuilds, setNewAllowedGuilds] = useState<string[]>(['any']);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +31,8 @@ export default function EventForm({ onSubmit, onClose }: EventFormProps) {
       await onSubmit({
         title: newTitle.trim(), type: newType, description: newDescription.trim() || 'No description.',
         weekday: newWeekday, time: newTime, date: newWeekday === 'Every day' ? `Daily at ${newTime}` : `${newWeekday} at ${newTime}`,
-        minLevel: Number(newMinLevel) || 1, rewards: rewardsArray.length ? rewardsArray : ['GP Coins']
+        minLevel: Number(newMinLevel) || 1, rewards: rewardsArray.length ? rewardsArray : ['GP Coins'],
+        allowedGuilds: newAllowedGuilds
       });
       onClose();
     } finally { setSubmitting(false); }
@@ -73,6 +75,30 @@ export default function EventForm({ onSubmit, onClose }: EventFormProps) {
         <div>
           <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Rewards (comma separated)</label>
           <input type="text" placeholder="+50 GP Points, Rare Item" value={newRewardsInput} onChange={(e) => setNewRewardsInput(e.target.value)} className="w-full h-10 px-3 bg-[#050609] border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Guild Restriction</label>
+          <div className="flex gap-2 flex-wrap">
+            {['any', 'RuinToo', 'Burnout', 'Void'].map((g) => {
+              const isSelected = g === 'any' ? newAllowedGuilds.includes('any') : newAllowedGuilds.includes(g);
+              return (
+                <button key={g} type="button" onClick={() => {
+                  if (g === 'any') { setNewAllowedGuilds(['any']); }
+                  else {
+                    const without = newAllowedGuilds.filter(x => x !== 'any');
+                    if (isSelected) {
+                      const updated = without.filter(x => x !== g);
+                      setNewAllowedGuilds(updated.length === 0 ? ['any'] : updated);
+                    } else {
+                      setNewAllowedGuilds([...without, g]);
+                    }
+                  }
+                }} className={`px-3 py-2 text-[10px] font-bold uppercase rounded-lg border transition-all cursor-pointer ${isSelected ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-slate-950/60 text-slate-400 border-slate-850 hover:bg-slate-900'}`}>
+                  {g === 'any' ? '🌐 All Guilds' : g} {isSelected && '✓'}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="flex gap-2 justify-end pt-2">
           <button type="button" onClick={onClose} className="px-4 h-9 bg-slate-900 border border-slate-800 text-slate-400 text-xs font-bold rounded-lg cursor-pointer">Cancel</button>
