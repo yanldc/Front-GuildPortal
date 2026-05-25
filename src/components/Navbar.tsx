@@ -11,7 +11,8 @@ import {
   Coins, 
   LayoutDashboard,
   Award,
-  TrendingUp
+  TrendingUp,
+  Trophy
 } from 'lucide-react';
 import { Member } from '../types';
 
@@ -31,6 +32,7 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
     { id: 'auctions', label: 'Guild Auctions', icon: Gavel },
     { id: 'my_auctions', label: 'My Bids & Loot', icon: Award },
     { id: 'levelup', label: 'Lv UP', icon: TrendingUp },
+    { id: 'ranking', label: 'Ranking', icon: Trophy },
     ...(currentUser.role === 'admin' 
       ? [{ id: 'admin', label: 'Admin Panel', icon: UserCheck, adminOnly: true }] 
       : [])

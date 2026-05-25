@@ -21,6 +21,7 @@ import MyAuctionsScreen from './components/MyAuctionsScreen';
 import AdminPanel from './components/admin/AdminPanel';
 import ProfileScreen from './components/ProfileScreen';
 import LevelUpScreen from './components/levelup/LevelUpScreen';
+import RankingScreen from './components/RankingScreen';
 import ToastContainer from './components/ToastContainer';
 
 export default function App() {
@@ -185,6 +186,8 @@ export default function App() {
         return <MyAuctionsScreen currentUser={currentUser} auctions={auctions} onPlaceBid={handlePlaceBid} />;
       case 'levelup':
         return <LevelUpScreen currentUser={currentUser} />;
+      case 'ranking':
+        return <RankingScreen />;
       case 'admin':
         if (currentUser.role !== 'admin') { setActiveTab('dashboard'); return null; }
         return <AdminPanel currentUser={currentUser} members={members} transactions={transactions} onAddMember={(_member: Member) => fetchMembers()} onUpdatePoints={handleUpdatePoints} onUpdatePointsBulk={handleUpdatePointsBulk} onUpdateMemberRole={handleUpdateMemberRole} onUpdateMemberGuild={handleUpdateMemberGuild} onDeleteMember={handleDeleteMember} />;
